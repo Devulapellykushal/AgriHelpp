@@ -1,0 +1,62 @@
+/* Reports.css */
+
+.reports-dashboard {
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.reports-header {
+  margin-bottom: 20px;
+}
+
+.reports-header h1 {
+  font-size: 24px;
+  color: #333;
+}
+
+.reports-welcome-message {
+  font-size: 16px;
+  color: #666;
+}
+
+.reports-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.reports-activity {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reports-activity h2 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.reports-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reports-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reports-activity-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.reports-activity-details small {
+  font-size: 12px;
+  color: #666;
+} 

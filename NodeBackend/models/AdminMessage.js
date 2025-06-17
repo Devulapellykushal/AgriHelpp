@@ -23,6 +23,11 @@ const AdminMessageSchema = new mongoose.Schema(
         message: 'At least one role must be specified',
       },
     },
+    targetUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'User',
+      default: [], // If empty, message goes to all users in selected roles
+    },
     sentAt: {
       type: Date,
       default: Date.now,

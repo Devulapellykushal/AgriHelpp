@@ -1,4 +1,4 @@
-import { AccountCircle, BarChart, Dashboard, History, Mail } from '@mui/icons-material';
+import { AccountCircle, BarChart, Dashboard, History, LocalHospital, Mail } from '@mui/icons-material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ const FarmerSidebar = () => {
   const navLinks = [
     { path: '/farmer/profile', label: t('sidebar.profile'), icon: <AccountCircle sx={{ mr: 1 }} /> },
     { path: '/farmer/dashboard', label: t('sidebar.dashboard'), icon: <Dashboard sx={{ mr: 1 }} /> },
+    { path: '/farmer/crop-health', label: t('sidebar.cropHealth'), icon: <LocalHospital sx={{ mr: 1 }} /> },
     { path: '/farmer/reports', label: t('sidebar.reports'), icon: <BarChart sx={{ mr: 1 }} /> },
     { path: '/farmer/messages', label: t('sidebar.messages'), icon: <Mail sx={{ mr: 1 }} /> },
     { path: '/farmer/history', label: t('sidebar.history'), icon: <History sx={{ mr: 1 }} /> },

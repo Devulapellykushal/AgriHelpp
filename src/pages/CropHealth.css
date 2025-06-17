@@ -1,0 +1,246 @@
+.crop-health-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+}
+
+.crop-health-container .MuiCard-root {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.crop-health-container .MuiCard-root:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.crop-health-container .MuiButton-root {
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.crop-health-container .MuiButton-root:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.crop-health-container .MuiChip-root {
+  border-radius: 16px;
+  font-weight: 600;
+}
+
+.crop-health-container .MuiAlert-root {
+  border-radius: 8px;
+  border: none;
+}
+
+.crop-health-container .MuiList-root {
+  background: rgba(76, 175, 80, 0.05);
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.crop-health-container .MuiListItem-root {
+  border-radius: 4px;
+  margin: 2px 0;
+  transition: background-color 0.2s ease;
+}
+
+.crop-health-container .MuiListItem-root:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.crop-health-container .MuiPaper-root {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.crop-health-container .MuiPaper-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Upload area styling */
+.upload-area {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.upload-area:hover {
+  border-color: #4caf50;
+  background: rgba(76, 175, 80, 0.05);
+  transform: scale(1.02);
+}
+
+.upload-area.dragover {
+  border-color: #4caf50;
+  background: rgba(76, 175, 80, 0.1);
+  transform: scale(1.02);
+}
+
+/* Image preview styling */
+.image-preview {
+  position: relative;
+  display: inline-block;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+/* Analysis result styling */
+.analysis-result {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading animation */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* History items styling */
+.history-item {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.history-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.history-item img {
+  border-radius: 6px;
+  transition: transform 0.3s ease;
+}
+
+.history-item:hover img {
+  transform: scale(1.05);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .crop-health-container {
+    padding: 10px;
+  }
+  
+  .crop-health-container .MuiGrid-container {
+    margin: 0;
+  }
+  
+  .crop-health-container .MuiCard-root {
+    margin-bottom: 16px;
+  }
+  
+  .upload-area {
+    padding: 20px;
+  }
+  
+  .crop-health-container .MuiButton-root {
+    font-size: 0.875rem;
+    padding: 8px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .crop-health-container {
+    padding: 5px;
+  }
+  
+  .crop-health-container .MuiTypography-h4 {
+    font-size: 1.5rem;
+  }
+  
+  .crop-health-container .MuiTypography-h6 {
+    font-size: 1.1rem;
+  }
+  
+  .upload-area {
+    padding: 15px;
+  }
+  
+  .crop-health-container .MuiButton-root {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}
+
+/* Custom scrollbar */
+.crop-health-container ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.crop-health-container ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.crop-health-container ::-webkit-scrollbar-thumb {
+  background: #4caf50;
+  border-radius: 4px;
+}
+
+.crop-health-container ::-webkit-scrollbar-thumb:hover {
+  background: #45a049;
+}
+
+/* Print styles */
+@media print {
+  .crop-health-container {
+    background: white;
+    padding: 0;
+  }
+  
+  .crop-health-container .MuiButton-root {
+    display: none;
+  }
+  
+  .crop-health-container .MuiCard-root {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+} 

@@ -34,9 +34,12 @@ const Messages = () => {
 
     const fetchMessages = async () => {
       try {
-        console.log(`🔍 Fetching: GET http://localhost:5005/api/messages/getMessages?role=${encodeURIComponent(user.role)}`);
+        console.log(`🔍 Fetching: GET http://localhost:5005/api/admin/getMessages?role=${encodeURIComponent(user.role)}&userId=${user.id}`);
         const response = await axios.get(`http://localhost:5005/api/admin/getMessages`, {
-          params: { role: user.role }
+          params: { 
+            role: user.role,
+            userId: user.id
+          }
         });
         console.log("✅ API response:", response.data);
 
@@ -59,7 +62,7 @@ const Messages = () => {
 
     fetchMessages();
 
-  }, [user?.role, location.pathname]);
+  }, [user?.role, user?.id, location.pathname]);
 
   if (loading) {
     return (

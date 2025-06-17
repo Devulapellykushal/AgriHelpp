@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import './i18n'; // Import i18n configuration
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMessages from './pages/AdminMessages';
+import CropHealth from './pages/CropHealth';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/dealer/Inventory';
 import Orders from './pages/dealer/Orders';
@@ -341,6 +342,11 @@ const AppContent = () => {
               <RetailerSupport />
             </ProtectedRoute>
           } />
+          <Route path="/retailer/messages" element={
+            <ProtectedRoute allowedRoles={['Retailer']}>
+              <Messages />
+            </ProtectedRoute>
+          } />
 
           {/* Wholesaler routes */}
           <Route path="/wholesaler/dashboard" element={<ProtectedRoute allowedRoles={['Wholesaler']}><WholesalerDashboard /></ProtectedRoute>} />
@@ -351,13 +357,14 @@ const AppContent = () => {
 
           {/* Role-specific Messages routes */}
           <Route path="/farmer/messages" element={<ProtectedRoute allowedRoles={['Farmer']}><Messages /></ProtectedRoute>} />
-          <Route path="/resource-provider/messages" element={<ProtectedRoute allowedRoles={['Resource Provider']}><Messages /></ProtectedRoute>} />
+          <Route path="/provider/messages" element={<ProtectedRoute allowedRoles={['Resource Provider']}><Messages /></ProtectedRoute>} />
           <Route path="/gov-agencies/messages" element={<ProtectedRoute allowedRoles={['Government Agencies', 'Government Agency']}><Messages /></ProtectedRoute>} />
           <Route path="/dealer/messages" element={<ProtectedRoute allowedRoles={['Dealer']}><Messages /></ProtectedRoute>} />
-
           <Route path="/expert/messages" element={<ProtectedRoute allowedRoles={['Agriculture Expert']}><Messages /></ProtectedRoute>} />
           <Route path="/wholesaler/messages" element={<ProtectedRoute allowedRoles={['Wholesaler']}><Messages /></ProtectedRoute>} />
           <Route path="/ngo/messages" element={<ProtectedRoute allowedRoles={['NGOs']}><Messages /></ProtectedRoute>} />
+          <Route path="/retailer/messages" element={<ProtectedRoute allowedRoles={['Retailer']}><Messages /></ProtectedRoute>} />
+
 
           {/* Routes that might still use the generic /messages if not linked from sidebars */}
           {/* Depending on your application flow, you might want to remove or redirect this */}
@@ -390,6 +397,13 @@ const AppContent = () => {
               <RoleBasedContent>
                 <HistoryPage />
               </RoleBasedContent>
+            </ProtectedRoute>
+          } />
+
+          {/* Added Crop Health route */}
+          <Route path="/farmer/crop-health" element={
+            <ProtectedRoute allowedRoles={['Farmer']}>
+              <CropHealth />
             </ProtectedRoute>
           } />
 

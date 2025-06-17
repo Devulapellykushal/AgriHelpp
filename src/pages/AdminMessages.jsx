@@ -3,18 +3,24 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
+  Divider,
   FormControl,
+  FormHelperText,
   InputLabel,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Paper,
   Select,
   Snackbar,
   TextField,
-  Typography,
+  Typography
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './AdminMessages.css';
 
@@ -23,7 +29,10 @@ const AdminMessages = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [usersByRole, setUsersByRole] = useState({});
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -43,9 +52,73 @@ const AdminMessages = () => {
     { value: 'NGOs', label: t('roles.ngos') || 'NGOs' },
   ];
 
+  // Fetch users when roles change
+  useEffect(() => {
+    const fetchUsersForRoles = async () => {
+      if (selectedRoles.length === 0) {
+        setUsersByRole({});
+        setSelectedUsers([]);
+        return;
+      }
+
+      setLoadingUsers(true);
+      const newUsersByRole = {};
+
+      try {
+        for (const role of selectedRoles) {
+          const response = await fetch(`http://localhost:5005/api/admin/users-by-role?role=${encodeURIComponent(role)}`);
+          if (response.ok) {
+            const data = await response.json();
+            newUsersByRole[role] = data.users;
+          }
+        }
+        setUsersByRole(newUsersByRole);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to fetch users for selected roles',
+          severity: 'error',
+        });
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsersForRoles();
+  }, [selectedRoles]);
+
   // Handle role multi-select
   const handleRoleChange = (event) => {
     setSelectedRoles(event.target.value);
+  };
+
+  // Handle user selection
+  const handleUserToggle = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  // Handle select all users for a role
+  const handleSelectAllForRole = (role) => {
+    const roleUsers = usersByRole[role] || [];
+    const roleUserIds = roleUsers.map(user => user.id);
+    
+    setSelectedUsers(prev => {
+      const otherUsers = prev.filter(id => !roleUserIds.includes(id));
+      return [...otherUsers, ...roleUserIds];
+    });
+  };
+
+  // Handle deselect all users for a role
+  const handleDeselectAllForRole = (role) => {
+    const roleUsers = usersByRole[role] || [];
+    const roleUserIds = roleUsers.map(user => user.id);
+    
+    setSelectedUsers(prev => prev.filter(id => !roleUserIds.includes(id)));
   };
 
   // Handle form submit
@@ -75,6 +148,7 @@ const AdminMessages = () => {
           subject: subject.trim(),
           message: message.trim(),
           roles: selectedRoles,
+          targetUsers: selectedUsers,
         }),
       });
 
@@ -96,6 +170,8 @@ const AdminMessages = () => {
       setSubject('');
       setMessage('');
       setSelectedRoles([]);
+      setSelectedUsers([]);
+      setUsersByRole({});
 
     } catch (error) {
       console.error('❌ Error sending message:', error);
@@ -152,6 +228,92 @@ const AdminMessages = () => {
               ))}
             </Select>
           </FormControl>
+
+          {/* User Selection Section */}
+          {selectedRoles.length > 0 && (
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Select Users ({selectedUsers.length} selected)
+              </Typography>
+              {loadingUsers ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography>Loading users...</Typography>
+                </Box>
+              ) : (
+                <Box sx={{ maxHeight: 300, overflow: 'auto', border: '1px solid #ddd', borderRadius: 1 }}>
+                  {selectedRoles.map((role) => {
+                    const roleUsers = usersByRole[role] || [];
+                    const selectedRoleUsers = roleUsers.filter(user => selectedUsers.includes(user.id));
+                    
+                    return (
+                      <Box key={role}>
+                        <Box sx={{ 
+                          p: 1, 
+                          bgcolor: 'grey.100', 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center' 
+                        }}>
+                          <Typography variant="subtitle2">
+                            {roles.find(r => r.value === role)?.label || role} ({roleUsers.length} users)
+                          </Typography>
+                          <Box>
+                            <Button 
+                              size="small" 
+                              onClick={() => handleSelectAllForRole(role)}
+                              disabled={roleUsers.length === 0}
+                            >
+                              Select All
+                            </Button>
+                            <Button 
+                              size="small" 
+                              onClick={() => handleDeselectAllForRole(role)}
+                              disabled={roleUsers.length === 0}
+                            >
+                              Deselect All
+                            </Button>
+                          </Box>
+                        </Box>
+                        <List dense>
+                          {roleUsers.length === 0 ? (
+                            <ListItem>
+                              <ListItemText 
+                                primary="No users found for this role" 
+                                secondary="Users will appear here once they register"
+                              />
+                            </ListItem>
+                          ) : (
+                            roleUsers.map((user) => (
+                              <ListItem key={user.id} dense>
+                                <Checkbox
+                                  edge="start"
+                                  checked={selectedUsers.includes(user.id)}
+                                  onChange={() => handleUserToggle(user.id)}
+                                  size="small"
+                                />
+                                <ListItemText
+                                  primary={user.email}
+                                  secondary={`${user.roleId} • ${new Date(user.createdAt).toLocaleDateString()}`}
+                                />
+                              </ListItem>
+                            ))
+                          )}
+                        </List>
+                        {selectedRoles.indexOf(role) < selectedRoles.length - 1 && <Divider />}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+              <FormHelperText>
+                {selectedUsers.length > 0 
+                  ? `Selected ${selectedUsers.length} user(s) from ${selectedRoles.length} role(s)`
+                  : 'No users selected. Message will be sent to all users in selected roles.'
+                }
+              </FormHelperText>
+            </Box>
+          )}
 
           <TextField
             fullWidth

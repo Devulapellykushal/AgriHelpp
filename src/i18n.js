@@ -41,6 +41,7 @@ const enTranslations = {
   },
   dashboard: "Dashboard",
   profile: "Profile",
+  cropHealth: "Crop Health",
   reports: "Reports",
   messages: "Messages",
   messagesDescription: "Your messages and communications will appear here.",
@@ -547,6 +548,7 @@ const enTranslations = {
     sidebar: {
       profile: "Profile",
       dashboard: "Dashboard",
+      cropHealth: "Crop Health",
       reports: "Reports",
       messages: "Messages",
       history: "History",

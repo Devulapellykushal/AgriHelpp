@@ -17,7 +17,7 @@
 
 .filter-group {
   flex: 1;
-  min-width: 200px;
+  min-width: 180px;
 }
 
 .filter-group label {
@@ -79,6 +79,9 @@
     font-size: 0.95rem;
     padding: 1.2rem;
   }
+  .filter-group {
+    min-width: 160px;
+  }
   .filter-group label, .filter-group select, .apply-button {
     font-size: 0.95rem;
   }
@@ -94,6 +97,9 @@
     font-size: 0.92rem;
     padding: 1rem;
   }
+  .filter-group {
+    min-width: 140px;
+  }
   .filter-group label, .filter-group select, .apply-button {
     font-size: 0.9rem;
   }
@@ -108,6 +114,9 @@
   .filter-section {
     font-size: 0.88rem;
     padding: 0.5rem;
+  }
+  .filter-group {
+    min-width: 120px;
   }
   .filter-group label, .filter-group select, .apply-button {
     font-size: 0.85rem;

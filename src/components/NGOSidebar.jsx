@@ -5,7 +5,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './ResourceProviderSidebar.css';
 
-const NGOSidebar = () => {
+const NGOSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { t } = useTranslation();
@@ -25,27 +25,31 @@ const NGOSidebar = () => {
   ];
 
   return (
-    <div className="resource-provider-sidebar">
-      <div className="user-info">
-        <h3>{user?.role}</h3>
-        <p>{user?.email}</p>
+    <>
+      <div className={`resource-provider-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+        <div className="user-info">
+          <h3>{user?.role}</h3>
+          <p>{user?.email}</p>
+        </div>
+        <nav>
+          {navLinks.map(link => (
+            <NavLink
+              key={link.path}
+              to={link.path}
+              className={({ isActive }) => isActive ? 'active' : ''}
+              onClick={() => { if (window.innerWidth <= 1050) onToggle(); }}
+            >
+              {link.icon}
+              {link.label}
+            </NavLink>
+          ))}
+          <button onClick={handleLogout} className="logout-btn">
+            {t('sidebar.logout')}
+          </button>
+        </nav>
       </div>
-      <nav>
-        {navLinks.map(link => (
-          <NavLink
-            key={link.path}
-            to={link.path}
-            className={({ isActive }) => isActive ? 'active' : ''}
-          >
-            {link.icon}
-            {link.label}
-          </NavLink>
-        ))}
-        <button onClick={handleLogout} className="logout-btn">
-          {t('sidebar.logout')}
-        </button>
-      </nav>
-    </div>
+      {isOpen && <div className="sidebar-overlay" onClick={onToggle}></div>}
+    </>
   );
 };
 

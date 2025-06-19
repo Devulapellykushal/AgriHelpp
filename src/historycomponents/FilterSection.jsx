@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { mandalsList as andhraPradeshMandalsList } from '../data/andhraPradeshMandalsData';
+import { mandalsList as telanganaMandalsList } from '../data/telanganaMandalsData';
 import './FilterSection.css';
 
 const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) => {
@@ -12,6 +14,29 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
   const crops = Object.keys(t('crops', { returnObjects: true }));
   const states = Object.keys(t('states', { returnObjects: true }));
   const years = Array.from({ length: 52 }, (_, i) => (1966 + i).toString());
+
+  // Get districts and mandals based on selected state
+  const getDistrictsForState = (state) => {
+    if (!state) return [];
+    
+    const mandalsList = state === 'telangana' ? telanganaMandalsList : andhraPradeshMandalsList;
+    const districts = [...new Set(mandalsList.map(mandal => mandal.district))];
+    return districts.sort();
+  };
+
+  const getMandalsForDistrict = (state, district) => {
+    if (!state || !district) return [];
+    
+    const mandalsList = state === 'telangana' ? telanganaMandalsList : andhraPradeshMandalsList;
+    const mandals = mandalsList
+      .filter(mandal => mandal.district === district)
+      .map(mandal => mandal.mandal)
+      .sort();
+    return mandals;
+  };
+
+  const districts = getDistrictsForState(filters.state);
+  const mandals = getMandalsForDistrict(filters.state, filters.district);
 
   return (
     <section className="filter-section">
@@ -55,12 +80,51 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
           <select
             id="state"
             value={filters.state}
-            onChange={(e) => onFilterChange('state', e.target.value)}
+            onChange={(e) => {
+              onFilterChange('state', e.target.value);
+              // Clear district and mandal when state changes
+              onFilterChange('district', '');
+              onFilterChange('mandal', '');
+            }}
             disabled={isLoading}
           >
             <option value="">{t('selectState')}</option>
             {states.map(state => (
               <option key={state} value={state}>{t(`states.${state}`)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="district">{t('district')}</label>
+          <select
+            id="district"
+            value={filters.district}
+            onChange={(e) => {
+              onFilterChange('district', e.target.value);
+              // Clear mandal when district changes
+              onFilterChange('mandal', '');
+            }}
+            disabled={isLoading || !filters.state}
+          >
+            <option value="">{t('selectDistrict')}</option>
+            {districts.map(district => (
+              <option key={district} value={district}>{district}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="mandal">{t('mandal')}</label>
+          <select
+            id="mandal"
+            value={filters.mandal}
+            onChange={(e) => onFilterChange('mandal', e.target.value)}
+            disabled={isLoading || !filters.district}
+          >
+            <option value="">{t('selectMandal')}</option>
+            {mandals.map(mandal => (
+              <option key={mandal} value={mandal}>{mandal}</option>
             ))}
           </select>
         </div>

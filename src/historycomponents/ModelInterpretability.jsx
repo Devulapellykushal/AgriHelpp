@@ -16,7 +16,7 @@ const ModelInterpretability = ({ cropName, filters }) => {
       setError(null);
       
       try {
-        const response = await fetch('http://localhost:5000/interpret', {
+        const response = await fetch('http://localhost:5001/interpret', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ const ModelInterpretability = ({ cropName, filters }) => {
         <div className="interpretability-card">
           <h4>{t('limeExplanation')}</h4>
           <img 
-            src={`http://localhost:5000/static/lime_explanation.png?t=${Date.now()}`} 
+            src={`http://localhost:5001/static/lime_explanation.png?t=${Date.now()}`} 
             alt="LIME Explanation"
             className="interpretability-image"
           />
@@ -71,7 +71,7 @@ const ModelInterpretability = ({ cropName, filters }) => {
         <div className="interpretability-card">
           <h4>{t('shapSummary')}</h4>
           <img 
-            src={`http://localhost:5000/static/shap_summary.png?t=${Date.now()}`} 
+            src={`http://localhost:5001/static/shap_summary.png?t=${Date.now()}`} 
             alt="SHAP Summary"
             className="interpretability-image"
           />
@@ -79,7 +79,7 @@ const ModelInterpretability = ({ cropName, filters }) => {
         <div className="interpretability-card">
           <h4>{t('shapDependence')}</h4>
           <img 
-            src={`http://localhost:5000/static/shap_dependence.png?t=${Date.now()}`} 
+            src={`http://localhost:5001/static/shap_dependence.png?t=${Date.now()}`} 
             alt="SHAP Dependence"
             className="interpretability-image"
           />

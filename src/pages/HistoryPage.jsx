@@ -19,6 +19,8 @@ const HistoryPage = () => {
     primaryCrop: '',
     secondaryCrop: '',
     state: '',
+    district: '',
+    mandal: '',
     year: ''
   });
 
@@ -28,7 +30,9 @@ const HistoryPage = () => {
         ...prev,
         primaryCrop: location.state.primaryCrop || '',
         secondaryCrop: location.state.secondaryCrop || '',
-        state: location.state.state || ''
+        state: location.state.state || '',
+        district: location.state.district || '',
+        mandal: location.state.mandal || ''
       }));
     }
   }, [location.state]);

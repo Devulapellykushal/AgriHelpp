@@ -23,17 +23,26 @@
   }
 }
 
+@media (max-width: 1050px) {
+  .main-with-sidebar {
+    margin-left: 0;
+    padding: 1rem;
+    padding-top: 4rem; /* Add space for hamburger menu */
+  }
+}
+
 @media (max-width: 600px) {
   .main-with-sidebar {
     margin-left: 0;
     padding: 0.5rem;
+    padding-top: 3.5rem; /* Adjust space for hamburger menu */
   }
 }
 
 .hide-on-mobile {
   display: block;
 }
-@media (max-width: 768px) {
+@media (max-width: 1050px) {
   .hide-on-mobile {
     display: none !important;
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import './AdminDashboard.css';
@@ -7,11 +7,64 @@ const AdminDashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  const stats = [
-    { label: t('admin.totalUsers'), value: '1,234' },
-    { label: t('admin.activeUsers'), value: '890' },
-    { label: t('admin.totalResources'), value: '567' },
-    { label: t('admin.systemHealth'), value: '98%' },
+  // Real-time stats state
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalResources: 0,
+    systemHealth: 100,
+    errorLogs: 0,
+    warningLogs: 0,
+    totalLogs: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch stats from backend
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      // Fetch user stats
+      const userRes = await fetch('http://localhost:5005/api/admin/users/stats');
+      const userStats = await userRes.json();
+      // Fetch log stats
+      const logRes = await fetch('http://localhost:5005/api/admin/logs/stats');
+      const logStats = await logRes.json();
+      setStats({
+        totalUsers: userStats.totalUsers || 0,
+        activeUsers: userStats.usersByRole?.find(r => r._id === 'Farmer')?.count || 0, // Example: active users as Farmers
+        totalResources: userStats.usersByRole?.reduce((acc, r) => acc + (r.count || 0), 0) || 0,
+        systemHealth: logStats.systemHealth || 100,
+        errorLogs: logStats.errorLogs || 0,
+        warningLogs: logStats.warningLogs || 0,
+        totalLogs: logStats.totalLogs || 0
+      });
+    } catch (err) {
+      // fallback to zeros
+      setStats({
+        totalUsers: 0,
+        activeUsers: 0,
+        totalResources: 0,
+        systemHealth: 100,
+        errorLogs: 0,
+        warningLogs: 0,
+        totalLogs: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000); // auto-refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const statCards = [
+    { label: t('admin.totalUsers'), value: stats.totalUsers },
+    { label: t('admin.activeUsers'), value: stats.activeUsers },
+    { label: t('admin.totalResources'), value: stats.totalResources },
+    { label: t('admin.systemHealth'), value: `${stats.systemHealth}%` },
   ];
 
   const recentActivities = [
@@ -30,10 +83,10 @@ const AdminDashboard = () => {
       </div>
 
       <div className="stats-grid">
-        {stats.map((stat, index) => (
+        {statCards.map((stat, index) => (
           <div key={index} className="stat-card">
             <h3>{stat.label}</h3>
-            <p className="stat-value">{stat.value}</p>
+            <p className="stat-value">{loading ? '...' : stat.value}</p>
           </div>
         ))}
       </div>

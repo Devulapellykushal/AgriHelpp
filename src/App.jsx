@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import './App.css';
 import AdminSidebar from './components/AdminSidebar';
@@ -7,6 +7,7 @@ import BlankSidebar from './components/BlankSidebar';
 import DealerSidebar from './components/DealerSidebar';
 import FarmerSidebar from './components/FarmerSidebar';
 import GovernmentAgenciesSidebar from './components/GovernmentAgenciesSidebar';
+import HamburgerMenu from './components/HamburgerMenu';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import Login from './components/Login';
 import NGOSidebar from './components/NGOSidebar';
@@ -18,6 +19,10 @@ import RoleBasedContent from './components/RoleBasedContent';
 import WholesalerSidebar from './components/WholesalerSidebar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './i18n'; // Import i18n configuration
+import Logs from './pages/admin/Logs';
+import AdminReports from './pages/admin/Reports';
+import Settings from './pages/admin/Settings';
+import Users from './pages/admin/Users';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMessages from './pages/AdminMessages';
 import CropHealth from './pages/CropHealth';
@@ -45,7 +50,7 @@ import GovtOverview from './pages/govt/Overview';
 import HistoryPage from './pages/HistoryPage';
 import Messages from './pages/Messages';
 import Profile from './pages/Profile';
-import Reports from './pages/Reports';
+import UserReports from './pages/Reports';
 import ResourceProviderDashboard from './pages/ResourceProviderDashboard';
 import RetailerCustomers from './pages/retailer/Customers';
 import RetailerDashboard from './pages/retailer/Dashboard';
@@ -84,6 +89,27 @@ const getRoleBasedDashboardPath = (role) => {
 
 const AppContent = () => {
   const { user } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (window.innerWidth <= 768 && isSidebarOpen) {
+        const sidebar = document.querySelector('.resource-provider-sidebar, .sidebar');
+        const hamburger = document.querySelector('.hamburger-menu');
+        if (sidebar && !sidebar.contains(event.target) && !hamburger.contains(event.target)) {
+          setIsSidebarOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSidebarOpen]);
 
   // Updated PostLoginRedirect component with better role handling
   const PostLoginRedirect = () => {
@@ -122,28 +148,34 @@ const AppContent = () => {
 
   const renderSidebar = () => {
     if (!user) return null;
+    
+    const sidebarProps = {
+      isOpen: isSidebarOpen,
+      onToggle: toggleSidebar
+    };
+
     switch (user.role) {
       case 'Farmer':
-        return <FarmerSidebar />;
+        return <FarmerSidebar {...sidebarProps} />;
       case 'Resource Provider':
-        return <ResourceProviderSidebar />;
+        return <ResourceProviderSidebar {...sidebarProps} />;
       case 'Government Agencies':
       case 'Government Agency':
-        return <GovernmentAgenciesSidebar />;
+        return <GovernmentAgenciesSidebar {...sidebarProps} />;
       case 'Admin':
-        return <AdminSidebar />;
+        return <AdminSidebar {...sidebarProps} />;
       case 'Dealer':
-        return <DealerSidebar />;
+        return <DealerSidebar {...sidebarProps} />;
       case 'Agriculture Expert':
-        return <AgricultureExpertSidebar />;
+        return <AgricultureExpertSidebar {...sidebarProps} />;
       case 'Wholesaler':
-        return <WholesalerSidebar />;
+        return <WholesalerSidebar {...sidebarProps} />;
       case 'Retailer':
-        return <RetailerSidebar />;
+        return <RetailerSidebar {...sidebarProps} />;
       case 'NGOs':
-        return <NGOSidebar />;
+        return <NGOSidebar {...sidebarProps} />;
       default:
-        return <BlankSidebar />;
+        return <BlankSidebar {...sidebarProps} />;
     }
   };
 
@@ -175,6 +207,7 @@ const AppContent = () => {
   return (
     <div className="app">
       <LanguageSwitcher />
+      {user && <HamburgerMenu isOpen={isSidebarOpen} onToggle={toggleSidebar} />}
       {renderSidebar()}
       <main className={getMainClassName()}>
         <Routes>
@@ -212,25 +245,25 @@ const AppContent = () => {
           
           <Route path="/admin/users" element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <div>User Management Page (Coming Soon)</div>
+              <Users />
             </ProtectedRoute>
           } />
           
           <Route path="/admin/logs" element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <div>System Logs Page (Coming Soon)</div>
+              <Logs />
             </ProtectedRoute>
           } />
           
           <Route path="/admin/reports" element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <div>Admin Reports Page (Coming Soon)</div>
+              <AdminReports />
             </ProtectedRoute>
           } />
           
           <Route path="/admin/settings" element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <div>Admin Settings Page (Coming Soon)</div>
+              <Settings />
             </ProtectedRoute>
           } />
           
@@ -243,7 +276,7 @@ const AppContent = () => {
           <Route path="/reports" element={
             <ProtectedRoute>
               <RoleBasedContent>
-                <Reports />
+                <UserReports />
               </RoleBasedContent>
             </ProtectedRoute>
           } />
@@ -388,7 +421,7 @@ const AppContent = () => {
            <Route path="/farmer/reports" element={
             <ProtectedRoute allowedRoles={['Farmer']}>
               <RoleBasedContent>
-                <Reports />
+                <UserReports />
               </RoleBasedContent>
             </ProtectedRoute>
           } />
@@ -399,11 +432,11 @@ const AppContent = () => {
               </RoleBasedContent>
             </ProtectedRoute>
           } />
-
-          {/* Added Crop Health route */}
           <Route path="/farmer/crop-health" element={
             <ProtectedRoute allowedRoles={['Farmer']}>
-              <CropHealth />
+              <RoleBasedContent>
+                <CropHealth />
+              </RoleBasedContent>
             </ProtectedRoute>
           } />
 

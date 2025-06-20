@@ -10,9 +10,17 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
   // Debug log
   console.log('FilterSection language:', i18n.language, 'applyFilters:', t('applyFilters'));
   
-  // Get crops and states from translations
-  const crops = Object.keys(t('crops', { returnObjects: true }));
-  const states = Object.keys(t('states', { returnObjects: true }));
+  // Define a static list of crops that matches the backend
+  const crops = [
+    'Rice', 'Wheat', 'Kharif Sorghum', 'Rabi Sorghum', 'Pearl Millet', 'Maize',
+    'Finger Millet', 'Barley', 'Chickpea', 'Pigeonpea', 'Minor Pulses',
+    'Groundnut', 'Sesamum', 'Rapeseed and Mustard', 'Safflower', 'Castor',
+    'Linseed', 'Sunflower', 'Soyabean', 'Oilseeds', 'Sugarcane', 'Cotton'
+  ];
+
+  // Define a static list of states
+  const states = ['Andhra Pradesh', 'Telangana'];
+  
   const years = Array.from({ length: 52 }, (_, i) => (1966 + i).toString());
 
   // Get districts and mandals based on selected state
@@ -51,8 +59,8 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
           >
             <option value="">{t('selectPrimaryCrop')}</option>
             {crops.map(crop => (
-              <option key={crop} value={crop} disabled={crop === filters.secondaryCrop}>
-                {t(`crops.${crop}`)}
+              <option key={crop} value={crop.toLowerCase().replace(/ /g, '')} disabled={crop.toLowerCase().replace(/ /g, '') === filters.secondaryCrop}>
+                {crop}
               </option>
             ))}
           </select>
@@ -68,8 +76,8 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
           >
             <option value="">{t('selectSecondaryCrop')}</option>
             {crops.map(crop => (
-              <option key={crop} value={crop} disabled={crop === filters.primaryCrop}>
-                {t(`crops.${crop}`)}
+              <option key={crop} value={crop.toLowerCase().replace(/ /g, '')} disabled={crop.toLowerCase().replace(/ /g, '') === filters.primaryCrop}>
+                {crop}
               </option>
             ))}
           </select>
@@ -90,7 +98,7 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
           >
             <option value="">{t('selectState')}</option>
             {states.map(state => (
-              <option key={state} value={state}>{t(`states.${state}`)}</option>
+              <option key={state} value={state.toLowerCase().replace(/ /g, '')}>{state}</option>
             ))}
           </select>
         </div>
@@ -147,7 +155,7 @@ const FilterSection = ({ filters, onFilterChange, onApplyFilters, isLoading }) =
         <button 
           className="apply-button"
           onClick={onApplyFilters}
-          disabled={!filters.primaryCrop || !filters.secondaryCrop || !filters.state || !filters.year || isLoading}
+          disabled={!filters.primaryCrop || !filters.state || isLoading}
         >
           {isLoading ? t('loading') : t('applyFilters')}
         </button>

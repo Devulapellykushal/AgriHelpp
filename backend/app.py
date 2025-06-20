@@ -36,8 +36,12 @@ CORS(app, supports_credentials=True, resources={
     }
 })
 
+# Construct the absolute path to the data file
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(backend_dir, 'TG_AP_CropData.csv')
+
 # Load the data once on startup
-trends_analyzer = CropTrends('TG_AP_CropData.csv')
+trends_analyzer = CropTrends(data_path)
 
 # Load the PyTorch model and classes once on startup
 model = None

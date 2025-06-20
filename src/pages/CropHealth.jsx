@@ -63,7 +63,7 @@ const CropHealth = () => {
       formData.append('file', selectedFile);
 
       // Make API call to backend
-      const response = await fetch('http://localhost:5001/predict', {
+      const response = await fetch('http://localhost:5002/predict', {
         method: 'POST',
         body: formData,
       });

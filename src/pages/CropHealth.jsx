@@ -60,10 +60,10 @@ const CropHealth = () => {
     try {
       // Create FormData for file upload
       const formData = new FormData();
-      formData.append('image', selectedFile);
+      formData.append('file', selectedFile);
 
       // Make API call to backend
-      const response = await fetch('http://localhost:5001/api/predict_crop_health', {
+      const response = await fetch('http://localhost:5001/predict', {
         method: 'POST',
         body: formData,
       });
@@ -73,7 +73,8 @@ const CropHealth = () => {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to predict crop health');
       }
-
+      
+      // Store the full enriched JSON response in the state
       setPrediction(data);
       
     } catch (err) {
@@ -188,58 +189,129 @@ const CropHealth = () => {
             <div className="prediction-card">
               <div 
                 className="prediction-header"
-                style={{ borderColor: getStatusColor(prediction.is_healthy) }}
+                style={{ borderColor: getStatusColor(prediction.prediction.is_healthy) }}
               >
                 <span className="status-icon">
-                  {getStatusIcon(prediction.is_healthy)}
+                  {getStatusIcon(prediction.prediction.is_healthy)}
                 </span>
                 <h3>
-                  {prediction.is_healthy ? 'Healthy Plant' : 'Disease Detected'}
+                  {prediction.prediction.is_healthy ? 'Healthy Plant' : 'Disease Detected'}
                 </h3>
               </div>
 
               <div className="prediction-details">
                 <div className="detail-row">
                   <span className="detail-label">Crop:</span>
-                  <span className="detail-value">{prediction.crop_name}</span>
+                  <span className="detail-value">{prediction.prediction.crop}</span>
                 </div>
                 
                 <div className="detail-row">
                   <span className="detail-label">Condition:</span>
-                  <span className="detail-value">{prediction.disease_name}</span>
+                  <span className="detail-value">{prediction.prediction.disease}</span>
                 </div>
                 
                 <div className="detail-row">
                   <span className="detail-label">Confidence:</span>
                   <span className="detail-value">
-                    {prediction.confidence}%
+                    {prediction.prediction.confidence}
                   </span>
                 </div>
               </div>
 
               <div className="prediction-message">
-                <p>{prediction.message}</p>
+                <p>{prediction.advisory.title}</p>
               </div>
 
               {/* Recommendations */}
               <div className="recommendations">
-                <h4>💡 Recommendations:</h4>
-                {prediction.is_healthy ? (
+                <h4>💡 {prediction.prediction.is_healthy ? "Preventive Care:" : "Treatment Plan:"}</h4>
+                {prediction.advisory.steps && prediction.advisory.steps.length > 0 ? (
                   <ul>
-                    <li>Continue with your current care routine</li>
-                    <li>Monitor for any changes in appearance</li>
-                    <li>Maintain proper watering and fertilization</li>
+                    {prediction.advisory.steps.map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
                   </ul>
                 ) : (
-                  <ul>
-                    <li>Consider consulting with an agriculture expert</li>
-                    <li>Research treatment options for {prediction.disease_name}</li>
-                    <li>Monitor other plants in the area for similar symptoms</li>
-                    <li>Consider preventive measures for future crops</li>
-                  </ul>
+                  <p>No specific recommendations available.</p>
                 )}
               </div>
             </div>
+
+            {/* Vegetation Index Section */}
+            {prediction.vegetation_index && (
+              <div className="info-card-new">
+                <h3>📈 {prediction.vegetation_index.title}</h3>
+                <div className="ndvi-card">
+                  <div className="ndvi-score-container">
+                    <span className="ndvi-score">{prediction.vegetation_index.score}</span>
+                    <span className="ndvi-label">NDVI Score</span>
+                  </div>
+                  <div className="ndvi-details">
+                    <p><strong>Interpretation:</strong> {prediction.vegetation_index.interpretation}</p>
+                    <p className="details-text">{prediction.vegetation_index.details}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Support Services Section */}
+            {prediction.support_services && (
+              <div className="info-card-new">
+                <h3>🤝 Support Services</h3>
+                {/* Financial Benefits */}
+                {prediction.support_services.financial_benefits && prediction.support_services.financial_benefits.schemes.length > 0 &&
+                  <div className="support-card">
+                    <h4>💰 {prediction.support_services.financial_benefits.title}</h4>
+                    <ul>
+                        {prediction.support_services.financial_benefits.schemes.map(scheme => (
+                            <li key={scheme.name}><strong>{scheme.name}:</strong> {scheme.description}</li>
+                        ))}
+                    </ul>
+                  </div>
+                }
+                {/* Local Experts */}
+                 {prediction.support_services.local_experts && prediction.support_services.local_experts.contacts.length > 0 &&
+                  <div className="support-card">
+                    <h4>🧑‍🔬 {prediction.support_services.local_experts.title}</h4>
+                    <ul>
+                        {prediction.support_services.local_experts.contacts.map(contact => (
+                             <li key={contact.name}>{contact.name} - {contact.phone} ({contact.location})</li>
+                        ))}
+                    </ul>
+                  </div>
+                 }
+              </div>
+            )}
+            
+            {/* Community Insights */}
+            {prediction.community_insights && prediction.community_insights.insights.length > 0 && (
+              <div className="info-card-new">
+                <h3>👨‍🌾 Community Insights</h3>
+                <div className="insight-card">
+                    <h4>{prediction.community_insights.title}</h4>
+                    <ul>
+                        {prediction.community_insights.insights.map((insight, index) => (
+                            <li key={index}>{insight}</li>
+                        ))}
+                    </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Sustainability Tips */}
+            {prediction.sustainability_tips && prediction.sustainability_tips.tips.length > 0 && (
+              <div className="info-card-new">
+                <h3>🌱 Sustainability Tips</h3>
+                 <div className="sustainability-card">
+                     <h4>{prediction.sustainability_tips.title}</h4>
+                    <ul>
+                        {prediction.sustainability_tips.tips.map((tip, index) => (
+                            <li key={index}>{tip}</li>
+                        ))}
+                    </ul>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

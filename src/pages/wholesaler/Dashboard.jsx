@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  FaArrowDown,
-  FaArrowUp,
-  FaBox,
-  FaCalendarAlt,
-  FaChartBar,
-  FaChartLine,
-  FaClipboardList,
-  FaMoneyBillWave,
-  FaTruck,
-  FaWarehouse
+    FaArrowDown,
+    FaArrowUp,
+    FaBox,
+    FaCalendarAlt,
+    FaChartBar,
+    FaChartLine,
+    FaClipboardList,
+    FaMoneyBillWave,
+    FaTruck,
+    FaWarehouse
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import './Dashboard.css';

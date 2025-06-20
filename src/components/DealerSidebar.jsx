@@ -35,7 +35,7 @@ const DealerSidebar = ({ isOpen, onToggle }) => {
               className={({ isActive }) => isActive ? 'active' : ''}
               onClick={() => { if (window.innerWidth <= 1050) onToggle(); }}
             >
-              {item.icon} {item.label}
+              {item.icon} {t(item.label)}
             </NavLink>
           ))}
         </nav>

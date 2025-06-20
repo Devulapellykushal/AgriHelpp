@@ -39,3 +39,13 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Environment
+.env
+farmercrophealthbackend/.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/

@@ -5,20 +5,20 @@ import './DealerDashboard.css';
 const DealerDashboard = () => {
   const { t } = useTranslation();
   const dealerStats = [
-    { label: t('pendingOrders'), value: 8, icon: '📦' },
-    { label: t('inventoryItems'), value: 120, icon: '📊' },
-    { label: t('paymentsDue'), value: 3, icon: '💰' },
+    { label: t('dealer.pendingOrdersCount'), value: 8, icon: '📦' },
+    { label: t('dealer.inventoryItemsCount'), value: 120, icon: '📊' },
+    { label: t('dealer.pendingPaymentsCount'), value: 3, icon: '💰' },
   ];
   const recentOrders = [
-    { id: 'ORD-1001', date: '2024-06-01', status: t('pending'), amount: '₹12,000' },
-    { id: 'ORD-1000', date: '2024-05-28', status: t('completed'), amount: '₹8,500' },
-    { id: 'ORD-0999', date: '2024-05-25', status: t('shipped'), amount: '₹15,200' },
+    { id: 'ORD-1001', date: '2024-06-01', status: t('dealer.pending'), amount: '₹12,000' },
+    { id: 'ORD-1000', date: '2024-05-28', status: t('dealer.completed'), amount: '₹8,500' },
+    { id: 'ORD-0999', date: '2024-05-25', status: t('dealer.shipped'), amount: '₹15,200' },
   ];
   return (
     <div className="dealer-dashboard-container">
       <div className="dealer-welcome-card">
-        <h1>{t('welcomeDealer', { name: localStorage.getItem('userName') || 'Dealer' })}</h1>
-        <p>{t('dealerDashboardIntro')}</p>
+        <h1>{t('dealer.welcomeTitle')}</h1>
+        <p>{t('dealer.dealerDashboardWelcome')}</p>
       </div>
       <div className="dealer-stats-grid">
         {dealerStats.map(stat => (
@@ -33,14 +33,14 @@ const DealerDashboard = () => {
       </div>
       <div className="dealer-main-content">
         <div className="dealer-recent-orders">
-          <h2>{t('recentOrders')}</h2>
+          <h2>{t('dealer.recentOrdersTitle')}</h2>
           <table className="dealer-orders-table">
             <thead>
               <tr>
-                <th>{t('orderId')}</th>
-                <th>{t('date')}</th>
-                <th>{t('status')}</th>
-                <th>{t('amount')}</th>
+                <th>{t('dealer.orderTable.orderId')}</th>
+                <th>{t('dealer.orderTable.date')}</th>
+                <th>{t('dealer.orderTable.status')}</th>
+                <th>{t('dealer.orderTable.amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -56,25 +56,25 @@ const DealerDashboard = () => {
           </table>
         </div>
         <div className="dealer-inventory-overview">
-          <h2>{t('inventoryOverview')}</h2>
+          <h2>{t('dealer.inventoryTitle')}</h2>
           <ul>
-            <li>Wheat: 40 units</li>
-            <li>Rice: 30 units</li>
-            <li>Maize: 20 units</li>
-            <li>Soybean: 15 units</li>
+            <li>{t('dealer.inventoryItems.wheat')}: 40 {t('dealer.inventoryItems.units')}</li>
+            <li>{t('dealer.inventoryItems.rice')}: 30 {t('dealer.inventoryItems.units')}</li>
+            <li>{t('dealer.inventoryItems.maize')}: 20 {t('dealer.inventoryItems.units')}</li>
+            <li>{t('dealer.inventoryItems.soybean')}: 15 {t('dealer.inventoryItems.units')}</li>
           </ul>
         </div>
       </div>
       <div className="dealer-quick-actions-support">
         <div className="dealer-quick-actions">
-          <h3>{t('quickActions')}</h3>
-          <button className="dealer-action-btn">{t('addOrder')}</button>
-          <button className="dealer-action-btn">{t('manageInventory')}</button>
-          <button className="dealer-action-btn">{t('viewPayments')}</button>
+          <h3>{t('dealer.quickActions')}</h3>
+          <button className="dealer-action-btn">{t('dealer.addItem')}</button>
+          <button className="dealer-action-btn">{t('dealer.inventory')}</button>
+          <button className="dealer-action-btn">{t('dealer.payments')}</button>
         </div>
         <div className="dealer-support-info">
-          <h3>{t('support')}</h3>
-          <p>{t('dealerSupportText')}</p>
+          <h3>{t('dealer.support')}</h3>
+          <p>{t('dealer.dealerSupportText')}</p>
           <a href="mailto:support@agrihelp.com" className="dealer-support-link">support@agrihelp.com</a>
         </div>
       </div>

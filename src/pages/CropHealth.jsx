@@ -11,7 +11,12 @@ const CropHealth = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [prediction, setPrediction] = useState(null);
+  const [predictionResult, setPredictionResult] = useState(null);
+  const [expertReport, setExpertReport] = useState(null);
+  const [sustainabilityReport, setSustainabilityReport] = useState(null);
+  const [communityReport, setCommunityReport] = useState(null);
+  const [ndviReport, setNdviReport] = useState(null);
+  const [agenticMetadata, setAgenticMetadata] = useState(null);
   const [error, setError] = useState(null);
 
   // Handle file selection
@@ -33,7 +38,12 @@ const CropHealth = () => {
 
       setSelectedFile(file);
       setError(null);
-      setPrediction(null);
+      setPredictionResult(null);
+      setExpertReport(null);
+      setSustainabilityReport(null);
+      setCommunityReport(null);
+      setNdviReport(null);
+      setAgenticMetadata(null);
 
       // Create preview URL
       const reader = new FileReader();
@@ -55,17 +65,34 @@ const CropHealth = () => {
 
     setIsLoading(true);
     setError(null);
-    setPrediction(null);
+    setPredictionResult(null);
+    setExpertReport(null);
+    setSustainabilityReport(null);
+    setCommunityReport(null);
+    setNdviReport(null);
+    setAgenticMetadata(null);
 
     try {
-      // Create FormData for file upload
+      // Create FormData for file upload with user context for agentic AI
       const formData = new FormData();
       formData.append('file', selectedFile);
+      
+      // Add user context for agentic AI to provide personalized responses
+      formData.append('user_id', user?.email || 'anonymous');
+      formData.append('user_type', 'farmer');
+      formData.append('location', 'India'); // You can make this dynamic based on user profile
+      
+      // Add language preference for localized responses
+      const currentLanguage = localStorage.getItem('i18nextLng') || 'en';
+      formData.append('language', currentLanguage);
 
-      // Make API call to backend
-      const response = await fetch('http://localhost:5002/predict', {
+      // Make API call to agentic AI backend
+      const response = await fetch('http://localhost:5003/agentic_predict', {
         method: 'POST',
         body: formData,
+        headers: {
+          'Accept-Language': currentLanguage
+        }
       });
 
       const data = await response.json();
@@ -74,8 +101,13 @@ const CropHealth = () => {
         throw new Error(data.error || 'Failed to predict crop health');
       }
       
-      // Store the full enriched JSON response in the state
-      setPrediction(data);
+      // Store the full enriched JSON response from agentic AI
+      setPredictionResult(data.prediction);
+      setExpertReport(data.expert_advisor_report);
+      setSustainabilityReport(data.sustainability_insights);
+      setCommunityReport(data.community_wisdom);
+      setNdviReport(data.ndvi_analysis);
+      setAgenticMetadata(data.agentic_metadata);
       
     } catch (err) {
       setError(err.message || 'An error occurred while processing the image');
@@ -88,7 +120,12 @@ const CropHealth = () => {
   const handleReset = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
-    setPrediction(null);
+    setPredictionResult(null);
+    setExpertReport(null);
+    setSustainabilityReport(null);
+    setCommunityReport(null);
+    setNdviReport(null);
+    setAgenticMetadata(null);
     setError(null);
   };
 
@@ -102,13 +139,271 @@ const CropHealth = () => {
     return isHealthy ? '🌱' : '⚠️';
   };
 
+  // --- Render Functions for Agent Reports ---
+
+  const renderExpertAdvisorReport = () => {
+    if (!expertReport || Object.keys(expertReport).length === 0) return null;
+
+    return (
+      <div className="agent-report-card expert-advisor">
+        <div className="agent-card-header">
+          <h3><i className="fas fa-user-md"></i> Expert Advisor Report</h3>
+        </div>
+        <h4>{expertReport.title}</h4>
+        <p><strong>Overall Assessment:</strong> {expertReport.overall_assessment}</p>
+        
+        <div className="report-section">
+          <h5>Immediate Actions</h5>
+          <ul>
+            {expertReport.immediate_actions?.map((action, index) => <li key={index}>{action}</li>)}
+          </ul>
+        </div>
+
+        <div className="report-section">
+          <h5>Detailed Strategy</h5>
+          {expertReport.detailed_strategy && Object.entries(expertReport.detailed_strategy).map(([key, value]) => (
+            <div key={key}>
+              <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong>
+              <ul>{Array.isArray(value) && value.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="report-section">
+          <h5>Environmental Analysis</h5>
+          {expertReport.environmental_analysis && Object.entries(expertReport.environmental_analysis).map(([key, value]) => (
+            <p key={key}><strong>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {value}</p>
+          ))}
+        </div>
+
+        <div className="report-section">
+          <h5>Risk Analysis</h5>
+          <ul>
+            {expertReport.risk_analysis?.potential_risks?.map((riskItem, index) => (
+              <li key={index}>
+                <strong>{riskItem.risk}</strong> (Probability: {riskItem.probability}) - Mitigation: {riskItem.mitigation}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="report-section">
+          <h5>Cost Analysis</h5>
+          {expertReport.cost_analysis && (
+            <>
+              <p><strong>Estimated Costs:</strong> {expertReport.cost_analysis.estimated_costs}</p>
+              <p><strong>Budget Considerations:</strong> {expertReport.cost_analysis.budget_considerations}</p>
+              <div>
+                <strong>Cost-Effective Alternatives:</strong>
+                <ul>
+                  {expertReport.cost_analysis.cost_effective_alternatives?.map((alt, i) => <li key={i}>{alt}</li>)}
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="report-section">
+          <h5>Implementation Timeline</h5>
+          {expertReport.implementation_timeline && Object.entries(expertReport.implementation_timeline).map(([key, value]) => (
+             <div key={key}>
+              <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong>
+              <ul>{Array.isArray(value) && value.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+
+        <p className="disclaimer">{expertReport.disclaimer}</p>
+      </div>
+    );
+  };
+
+  const renderSustainabilityReport = () => {
+    if (!sustainabilityReport || !sustainabilityReport.synthesized_response) return null;
+
+    const { synthesized_response, recommendations } = sustainabilityReport;
+
+    return (
+      <div className="agent-report-card sustainability-insights">
+        <div className="agent-card-header">
+          <h3><i className="fas fa-leaf"></i> Sustainability Insights</h3>
+        </div>
+        <p><strong>Diagnosis:</strong> {synthesized_response.diagnosis}</p>
+        {synthesized_response.details && <p>{synthesized_response.details}</p>}
+        {synthesized_response.additional_notes && <p><strong>Additional Notes:</strong> {synthesized_response.additional_notes}</p>}
+        <div className="report-section">
+          <h5>Recommendations</h5>
+          <ul>
+            {recommendations?.map((rec, index) => <li key={index}>{rec}</li>)}
+          </ul>
+        </div>
+        {synthesized_response.disclaimer && <p className="disclaimer">{synthesized_response.disclaimer}</p>}
+      </div>
+    );
+  };
+
+  const renderCommunityWisdomReport = () => {
+    if (!communityReport || !communityReport.synthesized_response) return null;
+    
+    const { synthesized_response, recommendations } = communityReport;
+
+    return (
+      <div className="agent-report-card community-wisdom">
+        <div className="agent-card-header">
+          <h3><i className="fas fa-users"></i> Community Wisdom</h3>
+        </div>
+        <p><strong>Diagnosis:</strong> {synthesized_response.diagnosis}</p>
+        {synthesized_response.details && <p>{synthesized_response.details}</p>}
+        <div className="report-section">
+          <h5>Recommendations from the Community</h5>
+          <ul>
+            {recommendations?.map((rec, index) => <li key={index}>{rec}</li>)}
+          </ul>
+        </div>
+        {synthesized_response.additional_info && <p><strong>Additional Info:</strong> {synthesized_response.additional_info}</p>}
+        {synthesized_response.additional_notes && <p><strong>Additional Notes:</strong> {synthesized_response.additional_notes}</p>}
+      </div>
+    );
+  };
+
+  const renderNDVIAnalysis = () => {
+    if (!ndviReport) return null;
+
+    return (
+      <div className="agent-report-card ndvi-analysis">
+        <div className="agent-card-header">
+          <h3><i className="fas fa-chart-line"></i> NDVI Vegetation Health Analysis</h3>
+        </div>
+        
+        {ndviReport.ndvi_score && (
+          <div className="report-section">
+            <h5>NDVI Score</h5>
+            <div className="ndvi-score-display">
+              <span className="ndvi-value">{ndviReport.ndvi_score.score}</span>
+              <span className="ndvi-status">{ndviReport.ndvi_score.health_status}</span>
+            </div>
+            <p><strong>Interpretation:</strong> {ndviReport.ndvi_score.interpretation}</p>
+            <p><strong>Scale:</strong> {ndviReport.ndvi_score.scale}</p>
+          </div>
+        )}
+
+        {ndviReport.vegetation_health && (
+          <div className="report-section">
+            <h5>Vegetation Health Assessment</h5>
+            <p><strong>Health Level:</strong> {ndviReport.vegetation_health.health_level}</p>
+            <p><strong>Monitoring Schedule:</strong> {ndviReport.vegetation_health.monitoring_schedule}</p>
+            
+            {ndviReport.vegetation_health.stress_factors && ndviReport.vegetation_health.stress_factors.length > 0 && (
+              <div>
+                <strong>Stress Factors:</strong>
+                <ul>
+                  {ndviReport.vegetation_health.stress_factors.map((factor, index) => (
+                    <li key={index}>{factor}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {ndviReport.vegetation_health.recommendations && (
+              <div>
+                <strong>Recommendations:</strong>
+                <ul>
+                  {ndviReport.vegetation_health.recommendations.map((rec, index) => (
+                    <li key={index}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {ndviReport.comprehensive_report && (
+          <div className="report-section">
+            <h5>Comprehensive Analysis</h5>
+            
+            {ndviReport.comprehensive_report.vegetation_assessment && (
+              <div>
+                <strong>Vegetation Assessment:</strong>
+                <ul>
+                  <li>Overall Health: {ndviReport.comprehensive_report.vegetation_assessment.overall_health}</li>
+                  <li>Health Level: {ndviReport.comprehensive_report.vegetation_assessment.health_level}</li>
+                  <li>NDVI Interpretation: {ndviReport.comprehensive_report.vegetation_assessment.ndvi_interpretation}</li>
+                </ul>
+              </div>
+            )}
+
+            {ndviReport.comprehensive_report.stress_analysis && (
+              <div>
+                <strong>Stress Analysis:</strong>
+                <ul>
+                  <li>Severity: {ndviReport.comprehensive_report.stress_analysis.severity}</li>
+                  {ndviReport.comprehensive_report.stress_analysis.primary_factors && 
+                   ndviReport.comprehensive_report.stress_analysis.primary_factors.map((factor, index) => (
+                     <li key={index}>{factor}</li>
+                   ))}
+                </ul>
+              </div>
+            )}
+
+            {ndviReport.comprehensive_report.management_recommendations && (
+              <div>
+                <strong>Management Recommendations:</strong>
+                <div>
+                  <strong>Immediate Actions:</strong>
+                  <ul>
+                    {ndviReport.comprehensive_report.management_recommendations.immediate_actions.map((action, index) => (
+                      <li key={index}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <strong>Long-term Strategy:</strong>
+                  <ul>
+                    {ndviReport.comprehensive_report.management_recommendations.long_term_strategy.map((strategy, index) => (
+                      <li key={index}>{strategy}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {ndviReport.comprehensive_report.monitoring_guidelines && (
+              <div>
+                <strong>Monitoring Guidelines:</strong>
+                <ul>
+                  <li>Frequency: {ndviReport.comprehensive_report.monitoring_guidelines.frequency}</li>
+                  {ndviReport.comprehensive_report.monitoring_guidelines.key_indicators.map((indicator, index) => (
+                    <li key={index}>{indicator}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {ndviReport.comprehensive_report.recovery_timeline && (
+              <div>
+                <strong>Recovery Timeline:</strong>
+                <ul>
+                  <li>Expected Improvement: {ndviReport.comprehensive_report.recovery_timeline.expected_improvement}</li>
+                  <li>Full Recovery: {ndviReport.comprehensive_report.recovery_timeline.full_recovery}</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="crop-health-container">
       <div className="crop-health-header">
-        <h1>🌾 Crop Health Analysis</h1>
+        <h1>🌾 Agentic AI Crop Health Analysis</h1>
         <p className="welcome-message">
-          Welcome, {user?.email}! Upload a leaf or crop image to analyze its health.
+          Welcome, {user?.email}! Upload a leaf or crop image for enhanced AI-powered health analysis with autonomous decision-making.
         </p>
+        <div className="agentic-badge">
+          <span>🤖 Powered by Agentic AI</span>
+        </div>
       </div>
 
       <div className="crop-health-content">
@@ -176,142 +471,69 @@ const CropHealth = () => {
         {isLoading && (
           <div className="loading-state">
             <div className="loading-spinner"></div>
-            <p>Analyzing your crop image...</p>
-            <p className="loading-note">This may take a few seconds</p>
+            <p>🤖 Agentic AI analyzing your crop image...</p>
+            <p className="loading-note">Multiple AI agents are coordinating to provide enhanced analysis</p>
           </div>
         )}
 
         {/* Results Section */}
-        {prediction && (
+        {predictionResult && (
           <div className="results-section">
-            <h2>📊 Analysis Results</h2>
-            
-            <div className="prediction-card">
-              <div 
-                className="prediction-header"
-                style={{ borderColor: getStatusColor(prediction.prediction.is_healthy) }}
-              >
-                <span className="status-icon">
-                  {getStatusIcon(prediction.prediction.is_healthy)}
-                </span>
-                <h3>
-                  {prediction.prediction.is_healthy ? 'Healthy Plant' : 'Disease Detected'}
-                </h3>
-              </div>
+            <div className="results-grid">
 
-              <div className="prediction-details">
-                <div className="detail-row">
-                  <span className="detail-label">Crop:</span>
-                  <span className="detail-value">{prediction.prediction.crop}</span>
-                </div>
-                
-                <div className="detail-row">
-                  <span className="detail-label">Condition:</span>
-                  <span className="detail-value">{prediction.prediction.disease}</span>
-                </div>
-                
-                <div className="detail-row">
-                  <span className="detail-label">Confidence:</span>
-                  <span className="detail-value">
-                    {prediction.prediction.confidence}
+              {/* Basic Prediction Card */}
+              <div className="prediction-card">
+                <div 
+                  className="prediction-header"
+                  style={{ borderColor: getStatusColor(predictionResult.is_healthy) }}
+                >
+                  <span className="status-icon">
+                    {getStatusIcon(predictionResult.is_healthy)}
                   </span>
+                  <h3>
+                    {predictionResult.is_healthy ? 'Healthy Plant' : 'Disease Detected'}
+                  </h3>
+                </div>
+
+                <div className="prediction-details">
+                  <div className="detail-row">
+                    <span className="detail-label">Crop:</span>
+                    <span className="detail-value">{predictionResult.crop}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Condition:</span>
+                    <span className="detail-value">{predictionResult.disease}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Confidence:</span>
+                    <span className="detail-value">{predictionResult.confidence}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="prediction-message">
-                <p>{prediction.advisory.title}</p>
-              </div>
-
-              {/* Recommendations */}
-              <div className="recommendations">
-                <h4>💡 {prediction.prediction.is_healthy ? "Preventive Care:" : "Treatment Plan:"}</h4>
-                {prediction.advisory.steps && prediction.advisory.steps.length > 0 ? (
-                  <ul>
-                    {prediction.advisory.steps.map((step, index) => (
-                      <li key={index}>{step}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No specific recommendations available.</p>
-                )}
-              </div>
+              {/* Agentic Metadata Card */}
+              {agenticMetadata && (
+                <div className="agentic-metadata-card">
+                   <div className="agent-card-header">
+                      <h3><i className="fas fa-cogs"></i> Agentic AI Details</h3>
+                    </div>
+                  <div className="metadata-grid">
+                    <div><strong>Agents Used:</strong> {agenticMetadata.agents_used?.join(', ')}</div>
+                    <div><strong>Total Actions:</strong> {agenticMetadata.total_actions}</div>
+                    <div><strong>Overall Confidence:</strong> {agenticMetadata.overall_confidence ? `${(agenticMetadata.overall_confidence * 100).toFixed(1)}%` : 'N/A'}</div>
+                    <div><strong>Learning Applied:</strong> {agenticMetadata.learning_applied ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Vegetation Index Section */}
-            {prediction.vegetation_index && (
-              <div className="info-card-new">
-                <h3>📈 {prediction.vegetation_index.title}</h3>
-                <div className="ndvi-card">
-                  <div className="ndvi-score-container">
-                    <span className="ndvi-score">{prediction.vegetation_index.score}</span>
-                    <span className="ndvi-label">NDVI Score</span>
-                  </div>
-                  <div className="ndvi-details">
-                    <p><strong>Interpretation:</strong> {prediction.vegetation_index.interpretation}</p>
-                    <p className="details-text">{prediction.vegetation_index.details}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Support Services Section */}
-            {prediction.support_services && (
-              <div className="info-card-new">
-                <h3>🤝 Support Services</h3>
-                {/* Financial Benefits */}
-                {prediction.support_services.financial_benefits && prediction.support_services.financial_benefits.schemes.length > 0 &&
-                  <div className="support-card">
-                    <h4>💰 {prediction.support_services.financial_benefits.title}</h4>
-                    <ul>
-                        {prediction.support_services.financial_benefits.schemes.map(scheme => (
-                            <li key={scheme.name}><strong>{scheme.name}:</strong> {scheme.description}</li>
-                        ))}
-                    </ul>
-                  </div>
-                }
-                {/* Local Experts */}
-                 {prediction.support_services.local_experts && prediction.support_services.local_experts.contacts.length > 0 &&
-                  <div className="support-card">
-                    <h4>🧑‍🔬 {prediction.support_services.local_experts.title}</h4>
-                    <ul>
-                        {prediction.support_services.local_experts.contacts.map(contact => (
-                             <li key={contact.name}>{contact.name} - {contact.phone} ({contact.location})</li>
-                        ))}
-                    </ul>
-                  </div>
-                 }
-              </div>
-            )}
-            
-            {/* Community Insights */}
-            {prediction.community_insights && prediction.community_insights.insights.length > 0 && (
-              <div className="info-card-new">
-                <h3>👨‍🌾 Community Insights</h3>
-                <div className="insight-card">
-                    <h4>{prediction.community_insights.title}</h4>
-                    <ul>
-                        {prediction.community_insights.insights.map((insight, index) => (
-                            <li key={index}>{insight}</li>
-                        ))}
-                    </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Sustainability Tips */}
-            {prediction.sustainability_tips && prediction.sustainability_tips.tips.length > 0 && (
-              <div className="info-card-new">
-                <h3>🌱 Sustainability Tips</h3>
-                 <div className="sustainability-card">
-                     <h4>{prediction.sustainability_tips.title}</h4>
-                    <ul>
-                        {prediction.sustainability_tips.tips.map((tip, index) => (
-                            <li key={index}>{tip}</li>
-                        ))}
-                    </ul>
-                </div>
-              </div>
-            )}
+            {/* Render Agent Reports */}
+            <div className="agent-reports-container">
+              {renderExpertAdvisorReport()}
+              {renderSustainabilityReport()}
+              {renderCommunityWisdomReport()}
+              {renderNDVIAnalysis()}
+            </div>
           </div>
         )}
 

@@ -57,8 +57,8 @@ import RetailerDashboard from './pages/retailer/Dashboard';
 import RetailerProducts from './pages/retailer/Products';
 import RetailerSupport from './pages/retailer/Support';
 import Analytics from './pages/wholesaler/Analytics';
-import BulkOrders from './pages/wholesaler/BulkOrders';
 import WholesalerDashboard from './pages/wholesaler/Dashboard';
+import WholesalerInventory from './pages/wholesaler/Inventory';
 import Transactions from './pages/wholesaler/Transactions';
 
 const getRoleBasedDashboardPath = (role) => {
@@ -383,8 +383,7 @@ const AppContent = () => {
 
           {/* Wholesaler routes */}
           <Route path="/wholesaler/dashboard" element={<ProtectedRoute allowedRoles={['Wholesaler']}><WholesalerDashboard /></ProtectedRoute>} />
-          <Route path="/wholesaler/bulk-orders" element={<ProtectedRoute allowedRoles={['Wholesaler']}><BulkOrders /></ProtectedRoute>} />
-          <Route path="/wholesaler/inventory" element={<ProtectedRoute allowedRoles={['Wholesaler']}><Inventory /></ProtectedRoute>} />
+          <Route path="/wholesaler/inventory" element={<ProtectedRoute allowedRoles={['Wholesaler']}><WholesalerInventory /></ProtectedRoute>} />
           <Route path="/wholesaler/transactions" element={<ProtectedRoute allowedRoles={['Wholesaler']}><Transactions /></ProtectedRoute>} />
           <Route path="/wholesaler/analytics" element={<ProtectedRoute allowedRoles={['Wholesaler']}><Analytics /></ProtectedRoute>} />
 

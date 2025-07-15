@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    FaCalendarAlt,
-    FaChartLine,
-    FaDownload,
-    FaExchangeAlt,
-    FaEye,
-    FaFileExport,
-    FaFileImport,
-    FaFileInvoiceDollar,
-    FaMoneyBillWave,
-    FaPlus,
-    FaPrint,
-    FaSearch
+  FaCalendarAlt,
+  FaChartLine,
+  FaDownload,
+  FaExchangeAlt,
+  FaEye,
+  FaFileExport,
+  FaFileImport,
+  FaFileInvoiceDollar,
+  FaMoneyBillWave,
+  FaPlus,
+  FaPrint,
+  FaSearch
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import './Transactions.css';
@@ -20,44 +21,48 @@ import './Transactions.css';
 const Transactions = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState('month');
   const [transactionType, setTransactionType] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Transaction statistics
+  useEffect(() => {
+    if (!user?.roleId) return;
+    setLoading(true);
+    setError(null);
+    const fetchTxns = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5005/api/inventory/transactions/${user.roleId}`);
+        setTransactions(res.data || []);
+      } catch (err) {
+        setError('Failed to fetch transactions');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTxns();
+  }, [user]);
+
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
   const transactionStats = [
     {
       label: 'Total Revenue',
-      value: '₹1,25,50,000',
+      value: `₹${totalRevenue.toLocaleString()}`,
       icon: <FaMoneyBillWave />,
-      trend: '+15.2%',
+      trend: '',
       trendDirection: 'up',
-      subLabel: 'Last 30 days'
-    },
-    {
-      label: 'Pending Payments',
-      value: '₹12,50,000',
-      icon: <FaFileInvoiceDollar />,
-      trend: '-5.1%',
-      trendDirection: 'down',
-      subLabel: 'Requires attention'
+      subLabel: 'All time'
     },
     {
       label: 'Transaction Volume',
-      value: '1,250',
+      value: transactions.length,
       icon: <FaExchangeAlt />,
-      trend: '+8.3%',
+      trend: '',
       trendDirection: 'up',
       subLabel: 'Total transactions'
-    },
-    {
-      label: 'Average Transaction',
-      value: '₹1,00,400',
-      icon: <FaChartLine />,
-      trend: '+12.5%',
-      trendDirection: 'up',
-      subLabel: 'Per transaction'
     }
   ];
 
@@ -106,50 +111,28 @@ const Transactions = () => {
     }
   ];
 
-  // Payment summary
-  const paymentSummary = {
-    total: '₹1,25,50,000',
-    received: '₹1,13,00,000',
-    pending: '₹12,50,000',
-    overdue: '₹2,50,000',
-    methods: [
-      { method: 'Bank Transfer', amount: '₹75,00,000', percentage: 60 },
-      { method: 'UPI', amount: '₹35,00,000', percentage: 28 },
-      { method: 'Cheque', amount: '₹15,50,000', percentage: 12 }
-    ]
-  };
-
-  // Transaction categories
-  const transactionCategories = [
-    {
-      category: 'Sales',
-      count: 850,
-      amount: '₹85,00,000',
-      trend: '+12.5%',
-      trendDirection: 'up'
-    },
-    {
-      category: 'Purchases',
-      count: 320,
-      amount: '₹35,00,000',
-      trend: '+8.3%',
-      trendDirection: 'up'
-    },
-    {
-      category: 'Returns',
-      count: 45,
-      amount: '₹4,50,000',
-      trend: '-2.1%',
-      trendDirection: 'down'
-    },
-    {
-      category: 'Adjustments',
-      count: 35,
-      amount: '₹1,00,000',
-      trend: '0%',
-      trendDirection: 'stable'
+  const totalAmount = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  const received = transactions.filter(t => t.paymentStatus === 'done').reduce((sum, t) => sum + (t.total || 0), 0);
+  const pending = transactions.filter(t => t.paymentStatus === 'due').reduce((sum, t) => sum + (t.total || 0), 0);
+  const overdue = 0; // Add logic if you want to track overdue
+  const paymentMethods = {};
+  transactions.forEach(t => {
+    if (t.paymentMethod) {
+      if (!paymentMethods[t.paymentMethod]) paymentMethods[t.paymentMethod] = 0;
+      paymentMethods[t.paymentMethod] += t.total || 0;
     }
-  ];
+  });
+  const paymentSummary = {
+    total: `₹${totalAmount.toLocaleString()}`,
+    received: `₹${received.toLocaleString()}`,
+    pending: `₹${pending.toLocaleString()}`,
+    overdue: `₹${overdue.toLocaleString()}`,
+    methods: Object.entries(paymentMethods).map(([method, amount]) => ({
+      method,
+      amount: `₹${amount.toLocaleString()}`,
+      percentage: totalAmount ? Math.round((amount / totalAmount) * 100) : 0
+    }))
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -308,7 +291,39 @@ const Transactions = () => {
           </div>
 
           <div className="transactions-list">
-            {recentTransactions.map(transaction => renderTransactionCard(transaction))}
+            {transactions.map(transaction => (
+              <div key={transaction._id} className="transaction-card">
+                <div className="transaction-header">
+                  <div className="transaction-info">
+                    <h3>{transaction.itemName}</h3>
+                    <span className="type sale">sale</span>
+                  </div>
+                  <span className="status-badge completed">completed</span>
+                </div>
+                <div className="transaction-details">
+                  <div className="detail-row">
+                    <span className="label">Date:</span>
+                    <span className="value">{new Date(transaction.date).toLocaleString()}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Dealer:</span>
+                    <span className="value">{transaction.dealerEmail}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Amount:</span>
+                    <span className="value amount">₹{transaction.total.toLocaleString()}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Quantity:</span>
+                    <span className="value">{transaction.quantity} {transaction.unit}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Price per unit:</span>
+                    <span className="value">{transaction.price}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -353,27 +368,6 @@ const Transactions = () => {
                     ></div>
                   </div>
                   <span className="method-percentage">{method.percentage}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Transaction Categories */}
-          <div className="sidebar-card transaction-categories">
-            <h2><FaChartLine /> Categories</h2>
-            <div className="categories-list">
-              {transactionCategories.map((category, index) => (
-                <div key={index} className="category-item">
-                  <div className="category-header">
-                    <span className="category-name">{category.category}</span>
-                    <span className={`trend ${category.trendDirection}`}>
-                      {category.trend}
-                    </span>
-                  </div>
-                  <div className="category-details">
-                    <span className="count">{category.count} transactions</span>
-                    <span className="amount">{category.amount}</span>
-                  </div>
                 </div>
               ))}
             </div>

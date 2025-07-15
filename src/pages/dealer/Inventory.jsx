@@ -1,41 +1,30 @@
 import {
-    Add,
-    Delete,
-    Edit,
-    Inventory as InventoryIcon,
-    Search,
-    TrendingDown,
-    TrendingUp,
-    Warning,
+  Add,
+  Inventory as InventoryIcon,
+  Search,
+  TrendingDown,
+  TrendingUp,
+  Warning
 } from '@mui/icons-material';
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    Grid,
-    IconButton,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography
 } from '@mui/material';
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import './Inventory.css';
@@ -47,54 +36,57 @@ const Inventory = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [wholesalers, setWholesalers] = useState([]);
+  const [selectedWholesaler, setSelectedWholesaler] = useState('');
+  const [stockAmount, setStockAmount] = useState('');
+  const [loadingWholesalers, setLoadingWholesalers] = useState(false);
+  const [error, setError] = useState(null);
+  const [wholesalerInventory, setWholesalerInventory] = useState([]);
+  const [selectedItem, setSelectedItem] = useState('');
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [requestedItems, setRequestedItems] = useState([]);
+  const [dealerInventory, setDealerInventory] = useState([]);
+  const [priceInputs, setPriceInputs] = useState({});
 
-  // Mock data - replace with actual API calls
-  const inventory = [
-    {
-      id: 'INV-001',
-      name: 'Wheat Seeds',
-      category: 'Seeds',
-      quantity: 500,
-      unit: 'kg',
-      price: '₹120/kg',
-      stockStatus: 'in-stock',
-      reorderLevel: 100,
-      lastRestocked: '2024-03-10',
-    },
-    {
-      id: 'INV-002',
-      name: 'Organic Fertilizer',
-      category: 'Fertilizers',
-      quantity: 200,
-      unit: 'bags',
-      price: '₹850/bag',
-      stockStatus: 'low-stock',
-      reorderLevel: 50,
-      lastRestocked: '2024-03-05',
-    },
-    {
-      id: 'INV-003',
-      name: 'Pesticide Spray',
-      category: 'Pesticides',
-      quantity: 150,
-      unit: 'bottles',
-      price: '₹450/bottle',
-      stockStatus: 'in-stock',
-      reorderLevel: 30,
-      lastRestocked: '2024-03-12',
-    },
-    {
-      id: 'INV-004',
-      name: 'Rice Seeds',
-      category: 'Seeds',
-      quantity: 0,
-      unit: 'kg',
-      price: '₹150/kg',
-      stockStatus: 'out-of-stock',
-      reorderLevel: 100,
-      lastRestocked: '2024-02-28',
-    },
-  ];
+  // Add polling for dealer requests to update status in real time
+  useEffect(() => {
+    if (!user?.roleId) return;
+    const fetchRequests = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5005/api/inventory/dealer-requests/dealer/${user.roleId}`);
+        // Only keep accepted requests for inventory table
+        setRequestedItems((res.data || []).filter(req => req.status === 'accepted'));
+        // Set initial price inputs
+        const priceMap = {};
+        (res.data || []).filter(req => req.status === 'accepted').forEach(item => {
+          priceMap[item._id] = item.price || '';
+        });
+        setPriceInputs(priceMap);
+      } catch (err) {
+        setRequestedItems([]);
+        setPriceInputs({});
+      }
+    };
+    fetchRequests();
+    const interval = setInterval(fetchRequests, 4000); // Poll every 4 seconds
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch dealer's successful inventory (accepted transactions)
+  useEffect(() => {
+    if (!user?.roleId) return;
+    const fetchDealerInventory = async () => {
+      try {
+        // Fetch all transactions for this dealer
+        const res = await axios.get(`http://localhost:5005/api/inventory/transactions/dealer/${user.roleId}`);
+        // Only show accepted (successful) items
+        setDealerInventory(res.data.filter(txn => txn.paymentStatus === 'done' || txn.paymentStatus === 'due'));
+      } catch (err) {
+        setDealerInventory([]);
+      }
+    };
+    fetchDealerInventory();
+  }, [user]);
 
   const stats = [
     { 
@@ -134,24 +126,134 @@ const Inventory = () => {
     return colors[status] || '#757575';
   };
 
-  const filteredInventory = inventory.filter(item => {
+  const filteredInventory = dealerInventory.filter(item => {
     const matchesSearch = 
-      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.category.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
-    const matchesStock = stockFilter === 'all' || item.stockStatus === stockFilter;
+    const matchesStock = stockFilter === 'all' || item.quantity === stockFilter; // Assuming quantity is the stock status
     
     return matchesSearch && matchesCategory && matchesStock;
   });
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     setOpenAddDialog(true);
+    setSelectedWholesaler('');
+    setStockAmount('');
+    setError(null);
+    setLoadingWholesalers(true);
+    try {
+      const res = await axios.get('http://localhost:5005/api/admin/users-by-role?role=Wholesaler');
+      setWholesalers(res.data.users || []);
+    } catch (err) {
+      setError('Failed to fetch wholesalers');
+    } finally {
+      setLoadingWholesalers(false);
+    }
   };
 
   const handleCloseDialog = () => {
     setOpenAddDialog(false);
+    setSelectedWholesaler('');
+    setStockAmount('');
+    setError(null);
+  };
+
+  const handleWholesalerSelect = async (e) => {
+    const roleId = e.target.value;
+    setSelectedWholesaler(roleId);
+    setStockAmount('');
+    setSelectedItem('');
+    setWholesalerInventory([]);
+    if (!roleId) return;
+    setLoadingInventory(true);
+    try {
+      const res = await axios.get(`http://localhost:5005/api/inventory/${roleId}`);
+      setWholesalerInventory(res.data || []);
+    } catch (err) {
+      setError('Failed to fetch wholesaler inventory');
+    } finally {
+      setLoadingInventory(false);
+    }
+  };
+
+  const handleItemSelect = (e) => {
+    setSelectedItem(e.target.value);
+    setStockAmount('');
+  };
+
+  const handleStockAmountChange = (e) => {
+    setStockAmount(e.target.value);
+  };
+
+  const handleRequest = async () => {
+    if (!selectedWholesaler || !selectedItem || !stockAmount) return;
+    const wholesaler = wholesalers.find(w => w.roleId === selectedWholesaler);
+    const item = wholesalerInventory.find(i => i._id === selectedItem);
+    if (!item?.price || isNaN(Number(String(item.price).replace(/[^\d.]/g, '')))) {
+      window.alert('This item does not have a valid price. Please contact the wholesaler.');
+      return;
+    }
+    if (Number(stockAmount) > Number(item?.quantity)) {
+      window.alert('The wholesaler you have selected does not have enough stock. Please try with a lower quantity.');
+      return;
+    }
+    const payload = {
+      dealerId: user.roleId,
+      dealerEmail: user.email,
+      wholesalerRoleId: wholesaler?.roleId,
+      wholesalerEmail: wholesaler?.email,
+      itemId: item?._id,
+      itemName: item?.name,
+      category: item?.category,
+      requestedQty: Number(stockAmount),
+      unit: item?.unit,
+      status: 'requested',
+      price: item?.price,
+    };
+    try {
+      await axios.post('http://localhost:5005/api/inventory/dealer-requests', payload);
+      // Refresh requests
+      const res = await axios.get(`http://localhost:5005/api/inventory/dealer-requests/dealer/${user.roleId}`);
+      setRequestedItems(res.data || []);
+    } catch (err) {
+      // Optionally handle error
+    }
+    setOpenAddDialog(false);
+    setSelectedWholesaler('');
+    setSelectedItem('');
+    setStockAmount('');
+    setWholesalerInventory([]);
+  };
+
+  // Handle price input change
+  const handlePriceInputChange = (id, value) => {
+    setPriceInputs(prev => ({ ...prev, [id]: value }));
+  };
+
+  // Handle save price
+  const handleSavePrice = async (id) => {
+    const newPrice = priceInputs[id];
+    if (!newPrice) return;
+    const item = requestedItems.find(i => i._id === id);
+    if (!item) return;
+    try {
+      await axios.post('http://localhost:5005/api/inventory/dealer-stock', {
+        dealerId: user.roleId,
+        dealerEmail: user.email,
+        itemName: item.itemName,
+        category: item.category,
+        quantity: item.requestedQty,
+        unit: item.unit,
+        price: newPrice,
+        dealerRequestId: item._id
+      });
+      // Optionally update UI
+      setRequestedItems(prev => prev.map(row => row._id === id ? { ...row, price: newPrice } : row));
+    } catch (err) {
+      window.alert('Failed to update price.');
+    }
   };
 
   return (
@@ -227,115 +329,150 @@ const Inventory = () => {
             color="primary"
             startIcon={<Add />}
             onClick={handleAddItem}
+            sx={{ mb: 2 }}
           >
             {t('dealer.addItem')}
           </Button>
         </Box>
       </div>
 
-      {/* Inventory Table */}
-      <TableContainer component={Paper} className="dealer-inventory-table-container">
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('dealer.itemId')}</TableCell>
-              <TableCell>{t('dealer.name')}</TableCell>
-              <TableCell>{t('dealer.category')}</TableCell>
-              <TableCell>{t('dealer.quantity')}</TableCell>
-              <TableCell>{t('dealer.price')}</TableCell>
-              <TableCell>{t('dealer.stockStatus')}</TableCell>
-              <TableCell>{t('dealer.reorderLevel')}</TableCell>
-              <TableCell>{t('dealer.lastRestocked')}</TableCell>
-              <TableCell>{t('dealer.actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredInventory.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.id}</TableCell>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.category}</TableCell>
-                <TableCell>{`${item.quantity} ${item.unit}`}</TableCell>
-                <TableCell>{item.price}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={t(`dealer.${item.stockStatus}`)}
-                    style={{
-                      backgroundColor: getStockStatusColor(item.stockStatus),
-                      color: 'white',
-                    }}
-                    size="small"
+      {/* Inventory Table - Only show accepted requests as inventory */}
+      {requestedItems.length > 0 && (
+        <table className="requested-items-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Quantity</th>
+              <th>Unit</th>
+              <th>Update Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requestedItems.map((item) => (
+              <tr key={item._id}>
+                <td>{item.itemName}</td>
+                <td>{item.category}</td>
+                <td>{item.requestedQty}</td>
+                <td>{item.unit}</td>
+                <td>
+                  <input
+                    type="text"
+                    value={priceInputs[item._id] || ''}
+                    onChange={e => handlePriceInputChange(item._id, e.target.value)}
+                    style={{ width: '80px', marginRight: '8px' }}
                   />
-                </TableCell>
-                <TableCell>{`${item.reorderLevel} ${item.unit}`}</TableCell>
-                <TableCell>{item.lastRestocked}</TableCell>
-                <TableCell>
-                  <IconButton size="small" title={t('dealer.edit')}>
-                    <Edit fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" title={t('dealer.delete')}>
-                    <Delete fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
+                  <button onClick={() => handleSavePrice(item._id)} style={{ padding: '2px 8px' }}>Save</button>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </table>
+      )}
+
+      {/* Requested Items Table */}
+      {requestedItems.length > 0 && (
+        <table className="requested-items-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Wholesaler</th>
+              <th>Requested Qty</th>
+              <th>Price</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requestedItems.map((req) => {
+              const pricePerUnit = req.price ? Number(String(req.price).replace(/[^\d.]/g, '')) : 0;
+              const total = pricePerUnit * Number(req.requestedQty);
+              return (
+                <tr key={req._id}>
+                  <td>{req.itemName}</td>
+                  <td>{req.category}</td>
+                  <td>{req.wholesalerEmail} ({req.wholesalerRoleId})</td>
+                  <td>{req.requestedQty} {req.unit}</td>
+                  <td>{req.price || '-'}</td>
+                  <td>₹{total.toLocaleString()}</td>
+                  <td><span className={`requested-badge ${req.status}`}>{req.status}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
 
       {/* Add Item Dialog */}
-      <Dialog open={openAddDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('dealer.addNewItem')}</DialogTitle>
+      <Dialog open={openAddDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Select Wholesaler & Stock Amount</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            <TextField
-              label={t('dealer.itemName')}
-              fullWidth
-              size="small"
-            />
-            <FormControl fullWidth size="small">
-              <InputLabel>{t('dealer.category')}</InputLabel>
-              <Select label={t('dealer.category')}>
-                {categories.map(category => (
-                  <MenuItem key={category} value={category}>{category}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label={t('dealer.quantity')}
-              type="number"
-              fullWidth
-              size="small"
-              InputProps={{
-                endAdornment: <InputAdornment position="end">units</InputAdornment>,
-              }}
-            />
-            <TextField
-              label={t('dealer.price')}
-              type="number"
-              fullWidth
-              size="small"
-              InputProps={{
-                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                endAdornment: <InputAdornment position="end">/unit</InputAdornment>,
-              }}
-            />
-            <TextField
-              label={t('dealer.reorderLevel')}
-              type="number"
-              fullWidth
-              size="small"
-              InputProps={{
-                endAdornment: <InputAdornment position="end">units</InputAdornment>,
-              }}
-            />
-          </Box>
+          {loadingWholesalers ? (
+            <p>Loading wholesalers...</p>
+          ) : error ? (
+            <p style={{ color: 'red' }}>{error}</p>
+          ) : (
+            <>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Wholesaler</InputLabel>
+                <Select
+                  value={selectedWholesaler}
+                  label="Wholesaler"
+                  onChange={handleWholesalerSelect}
+                >
+                  {wholesalers.map(w => (
+                    <MenuItem key={w.roleId} value={w.roleId}>
+                      {w.email} ({w.roleId})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {loadingInventory && <p>Loading inventory...</p>}
+              {selectedWholesaler && !loadingInventory && (
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Item</InputLabel>
+                  <Select
+                    value={selectedItem}
+                    label="Item"
+                    onChange={handleItemSelect}
+                  >
+                    {wholesalerInventory.map(item => (
+                      <MenuItem key={item._id} value={item._id}>
+                        {item.name} ({item.category}) - {item.quantity} {item.unit} available
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              {selectedItem && (
+                <TextField
+                  fullWidth
+                  label="Required Quantity"
+                  value={stockAmount}
+                  onChange={handleStockAmountChange}
+                  type="number"
+                  sx={{ mb: 2 }}
+                />
+              )}
+              {selectedItem && stockAmount && (() => {
+                const item = wholesalerInventory.find(i => i._id === selectedItem);
+                const pricePerUnit = item?.price || '-';
+                const priceNum = item?.price ? Number(String(item.price).replace(/[^\d.]/g, '')) : 0;
+                const total = priceNum * Number(stockAmount);
+                return (
+                  <div style={{marginTop: '0.5rem', fontWeight: 500}}>
+                    Price per unit: {pricePerUnit}<br />
+                    Total: ₹{total.toLocaleString()}
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>{t('dealer.cancel')}</Button>
-          <Button variant="contained" color="primary" onClick={handleCloseDialog}>
-            {t('dealer.add')}
-          </Button>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleRequest} disabled={!selectedWholesaler || !selectedItem || !stockAmount} variant="contained">Request</Button>
         </DialogActions>
       </Dialog>
     </div>

@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    FaArrowDown,
-    FaArrowUp,
-    FaBox,
-    FaCalendarAlt,
-    FaChartBar,
-    FaChartLine,
-    FaClipboardList,
-    FaMoneyBillWave,
-    FaTruck,
-    FaWarehouse
+  FaArrowDown,
+  FaArrowUp,
+  FaBox,
+  FaChartBar,
+  FaChartLine,
+  FaClipboardList,
+  FaMoneyBillWave,
+  FaWarehouse
 } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Dashboard.css';
 
@@ -19,95 +19,137 @@ const Dashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('week');
+  const [inventory, setInventory] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dealerRequests, setDealerRequests] = useState([]);
+  const navigate = useNavigate();
 
-  // Enhanced statistics with trends
+  useEffect(() => {
+    if (!user?.roleId) return;
+    setLoading(true);
+    setError(null);
+    const fetchData = async () => {
+      try {
+        const [invRes, ordRes] = await Promise.all([
+          axios.get(`http://localhost:5005/api/inventory/${user.roleId}`),
+          axios.get(`http://localhost:5005/api/inventory/orders/${user.roleId}`)
+        ]);
+        setInventory(invRes.data);
+        setOrders(ordRes.data);
+      } catch (err) {
+        setError('Failed to fetch dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.roleId) return;
+    const fetchDealerRequests = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5005/api/inventory/dealer-requests/wholesaler/${user.roleId}`);
+        setDealerRequests(res.data || []);
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    fetchDealerRequests();
+  }, [user]);
+
+  const handleRequestAction = async (id, status) => {
+    try {
+      await axios.patch(`http://localhost:5005/api/inventory/dealer-requests/${id}`, { status });
+      // Refetch all requests to ensure UI is in sync
+      const res = await axios.get(`http://localhost:5005/api/inventory/dealer-requests/wholesaler/${user.roleId}`);
+      setDealerRequests(res.data || []);
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
+  const handlePaymentStatus = async (txnId, paymentStatus) => {
+    try {
+      await axios.patch(`http://localhost:5005/api/inventory/transactions/${txnId}`, { paymentStatus });
+      // Optionally refetch transactions or update UI
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
+  // Calculate stats
+  const totalSKUs = inventory.length;
+  const totalOrders = dealerRequests.length;
+  const totalInventoryValue = inventory.reduce((sum, item) => {
+    // Try to extract numeric value from price string (e.g., '₹100/kg')
+    const priceNum = parseFloat((item.price || '').replace(/[^\d.]/g, '')) || 0;
+    return sum + (priceNum * item.quantity);
+  }, 0);
+
+  // Inventory status by category
+  const categories = ['Grains', 'Vegetables', 'Fruits', 'Dairy'];
+  const inventoryStatus = categories.map(category => {
+    const items = inventory.filter(item => (item.category || '').toLowerCase() === category.toLowerCase());
+    const stock = items.reduce((sum, item) => sum + item.quantity, 0);
+    // For demo, set capacity as 2x stock or 1000 if no items
+    const capacity = items.length > 0 ? stock * 2 : 1000;
+    // Status: healthy if >50% capacity, warning if 20-50%, critical if <20%
+    let status = 'critical';
+    if (capacity > 0) {
+      const percent = stock / capacity;
+      if (percent > 0.5) status = 'healthy';
+      else if (percent > 0.2) status = 'warning';
+    }
+    return { category, stock, capacity, status };
+  });
+
+  // Recent orders (show up to 3)
+  const recentOrders = orders.slice(0, 3).map(order => ({
+    id: order.orderId,
+    customer: order.customer,
+    items: order.items.map(i => i.name).join(', '),
+    amount: `₹${order.amount.toLocaleString()}`,
+    status: order.status,
+    date: new Date(order.date).toISOString().slice(0, 10),
+    priority: order.priority
+  }));
+
+  // Stats for cards
   const stats = [
-    { 
-      label: t('wholesaler.totalOrders'), 
-      value: '1,234',
-      icon: <FaClipboardList />,
-      trend: '+12.5%',
+    {
+      label: t('wholesaler.totalOrders'),
+      value: totalOrders,
+      icon: <FaClipboardList />, // You can add trends if you want
+      trend: '',
       trendDirection: 'up',
-      subLabel: 'Last 30 days'
+      subLabel: 'All time'
     },
-    { 
-      label: t('wholesaler.inventoryItems'), 
-      value: '2,450',
-      icon: <FaBox />,
-      trend: '+5.2%',
+    {
+      label: t('wholesaler.inventoryItems'),
+      value: totalSKUs,
+      icon: <FaBox />, // You can add trends if you want
+      trend: '',
       trendDirection: 'up',
       subLabel: 'Active SKUs'
     },
-    { 
-      label: t('wholesaler.revenue'), 
-      value: '₹45,80,000',
-      icon: <FaMoneyBillWave />,
-      trend: '+18.3%',
+    {
+      label: t('wholesaler.revenue'),
+      value: `₹${orders.reduce((sum, o) => sum + (o.amount || 0), 0).toLocaleString()}`,
+      icon: <FaMoneyBillWave />, // You can add trends if you want
+      trend: '',
       trendDirection: 'up',
-      subLabel: 'Monthly revenue'
-    },
-    { 
-      label: t('wholesaler.pendingDeliveries'), 
-      value: '28',
-      icon: <FaTruck />,
-      trend: '-3.1%',
-      trendDirection: 'down',
-      subLabel: 'Active deliveries'
-    }
-  ];
-
-  // Inventory status
-  const inventoryStatus = [
-    { category: 'Grains', stock: 1250, capacity: 2000, status: 'healthy' },
-    { category: 'Vegetables', stock: 850, capacity: 1200, status: 'warning' },
-    { category: 'Fruits', stock: 620, capacity: 1000, status: 'healthy' },
-    { category: 'Dairy', stock: 450, capacity: 800, status: 'critical' }
-  ];
-
-  // Recent orders with more details
-  const recentOrders = [
-    {
-      id: 'ORD-2024-001',
-      customer: 'Farm Fresh Market',
-      items: 'Wheat, Rice, Pulses',
-      amount: '₹85,000',
-      status: 'processing',
-      date: '2024-03-15',
-      priority: 'high'
-    },
-    {
-      id: 'ORD-2024-002',
-      customer: 'Green Grocers Co.',
-      items: 'Vegetables, Fruits',
-      amount: '₹45,000',
-      status: 'pending',
-      date: '2024-03-14',
-      priority: 'medium'
-    },
-    {
-      id: 'ORD-2024-003',
-      customer: 'Organic Foods Ltd',
-      items: 'Organic Grains, Spices',
-      amount: '₹1,25,000',
-      status: 'completed',
-      date: '2024-03-13',
-      priority: 'low'
+      subLabel: 'Total revenue'
     }
   ];
 
   // Performance metrics
   const performanceMetrics = [
     { label: 'Order Fulfillment Rate', value: '94.5%', target: '95%', status: 'warning' },
-    { label: 'On-time Delivery', value: '96.2%', target: '98%', status: 'warning' },
     { label: 'Customer Satisfaction', value: '4.7/5', target: '4.8/5', status: 'healthy' },
     { label: 'Inventory Turnover', value: '12.3', target: '15', status: 'critical' }
-  ];
-
-  // Upcoming deliveries
-  const upcomingDeliveries = [
-    { id: 'DEL-001', customer: 'Farm Fresh Market', items: 'Wheat, Rice', date: '2024-03-16', status: 'scheduled' },
-    { id: 'DEL-002', customer: 'Green Grocers Co.', items: 'Vegetables', date: '2024-03-17', status: 'preparing' },
-    { id: 'DEL-003', customer: 'Organic Foods Ltd', items: 'Organic Grains', date: '2024-03-18', status: 'scheduled' }
   ];
 
   // Market insights
@@ -127,10 +169,20 @@ const Dashboard = () => {
       pending: '#FFA726',
       completed: '#4CAF50',
       scheduled: '#2196F3',
-      preparing: '#FFA726'
+      preparing: '#FFA726',
+      accepted: '#4CAF50',
+      rejected: '#F44336'
     };
     return colors[status] || '#757575';
   };
+
+  if (loading) {
+    return <div className="wholesaler-dashboard">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="wholesaler-dashboard">{error}</div>;
+  }
 
   return (
     <div className="wholesaler-dashboard">
@@ -184,6 +236,69 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-grid">
+        {/* Recent Orders - as a dashboard card */}
+        <div className="dashboard-card recent-orders-card">
+          <h2>Recent Orders</h2>
+          {dealerRequests.length > 0 ? (
+            <div className="orders-table-wrapper">
+              <table className="requested-items-table">
+                <thead>
+                  <tr>
+                    <th>Dealer</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Requested Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Payment</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dealerRequests.map((req) => {
+                    const pricePerUnit = req.price ? Number(String(req.price).replace(/[^\d.]/g, '')) : 0;
+                    const total = pricePerUnit * Number(req.requestedQty);
+                    return (
+                      <tr key={req._id}>
+                        <td>{req.dealerEmail}</td>
+                        <td>{req.itemName}</td>
+                        <td>{req.category}</td>
+                        <td>{req.requestedQty} {req.unit}</td>
+                        <td>{req.price || '-'}</td>
+                        <td>₹{total.toLocaleString()}</td>
+                        <td><span className={`requested-badge ${req.status}`}>{req.status}</span></td>
+                        <td>{new Date(req.createdAt).toLocaleString()}</td>
+                        <td>
+                          <span className={`payment-badge ${req.paymentStatus}`}>{req.paymentStatus}</span>
+                          <button onClick={() => handlePaymentStatus(req._id, 'done')} disabled={req.paymentStatus === 'done'}>Done</button>
+                          <button onClick={() => handlePaymentStatus(req._id, 'due')} disabled={req.paymentStatus === 'due'}>Due</button>
+                        </td>
+                        <td>
+                          <button
+                            className="accept-btn"
+                            disabled={req.status !== 'requested'}
+                            onClick={() => handleRequestAction(req._id, 'accepted')}
+                          >Accept</button>
+                          <button
+                            className="reject-btn"
+                            disabled={req.status !== 'requested'}
+                            onClick={() => handleRequestAction(req._id, 'rejected')}
+                            style={{marginLeft: 8}}
+                          >Reject</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div>No recent orders.</div>
+          )}
+        </div>
+
         {/* Inventory Status */}
         <div className="dashboard-card inventory-status">
           <h2><FaWarehouse /> Inventory Status</h2>
@@ -206,30 +321,6 @@ const Dashboard = () => {
                 <div className="inventory-details">
                   <span>{item.stock} units</span>
                   <span>of {item.capacity}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        <div className="dashboard-card recent-orders">
-          <h2><FaClipboardList /> Recent Orders</h2>
-          <div className="orders-list">
-            {recentOrders.map((order, index) => (
-              <div key={index} className="order-item">
-                <div className="order-header">
-                  <span className="order-id">{order.id}</span>
-                  <span className={`status ${order.status}`}>{order.status}</span>
-                </div>
-                <div className="order-details">
-                  <p className="customer">{order.customer}</p>
-                  <p className="items">{order.items}</p>
-                  <div className="order-footer">
-                    <span className="amount">{order.amount}</span>
-                    <span className="date">{order.date}</span>
-                    <span className={`priority ${order.priority}`}>{order.priority}</span>
-                  </div>
                 </div>
               </div>
             ))}
@@ -264,30 +355,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Upcoming Deliveries */}
-        <div className="dashboard-card upcoming-deliveries">
-          <h2><FaTruck /> Upcoming Deliveries</h2>
-          <div className="deliveries-list">
-            {upcomingDeliveries.map((delivery, index) => (
-              <div key={index} className="delivery-item">
-                <div className="delivery-header">
-                  <span className="delivery-id">{delivery.id}</span>
-                  <span className={`status ${delivery.status}`}>{delivery.status}</span>
-                </div>
-                <div className="delivery-details">
-                  <p className="customer">{delivery.customer}</p>
-                  <p className="items">{delivery.items}</p>
-                  <div className="delivery-footer">
-                    <span className="date">
-                      <FaCalendarAlt /> {delivery.date}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Market Insights */}
         <div className="dashboard-card market-insights">
           <h2><FaChartLine /> Market Insights</h2>
@@ -314,18 +381,9 @@ const Dashboard = () => {
         <div className="dashboard-card quick-actions">
           <h2>Quick Actions</h2>
           <div className="action-buttons">
-            <button className="action-btn primary">
-              <FaClipboardList /> New Order
-            </button>
-            <button className="action-btn">
-              <FaBox /> Manage Inventory
-            </button>
-            <button className="action-btn">
-              <FaTruck /> Schedule Delivery
-            </button>
-            <button className="action-btn">
-              <FaChartBar /> View Reports
-            </button>
+            <button className="action-btn" onClick={() => navigate('/wholesaler/inventory')}>Add items</button>
+            <button className="action-btn" onClick={() => navigate('/wholesaler/inventory')}>Manage Inventory</button>
+            <button className="action-btn" onClick={() => navigate('/wholesaler/analytics')}>View Reports</button>
           </div>
         </div>
       </div>

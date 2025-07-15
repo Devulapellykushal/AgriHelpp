@@ -13,12 +13,14 @@ export const AuthProvider = ({ children }) => {
     const storedUserRole = sessionStorage.getItem('userRole');
     const storedUserEmail = sessionStorage.getItem('userEmail');
     const storedUserId = sessionStorage.getItem('userId');
+    const storedUserRoleId = sessionStorage.getItem('userRoleId');
 
-    if (storedUserRole && storedUserEmail && storedUserId) {
+    if (storedUserRole && storedUserEmail && storedUserId && storedUserRoleId) {
       setUser({
         id: storedUserId,
         role: storedUserRole,
         email: storedUserEmail,
+        roleId: storedUserRoleId,
       });
     }
 
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('userRole', userData.role);
     sessionStorage.setItem('userEmail', userData.email);
     sessionStorage.setItem('userId', userData.id);
+    sessionStorage.setItem('userRoleId', userData.roleId); // Store roleId
     setUser(userData);
   };
 
@@ -38,6 +41,7 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem('userRole');
     sessionStorage.removeItem('userEmail');
     sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('userRoleId');
     setUser(null);
   };
 

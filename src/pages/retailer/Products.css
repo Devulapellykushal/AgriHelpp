@@ -262,6 +262,27 @@
   color: #f44336;
 }
 
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin: 0 0.25rem;
+}
+.status-badge.accepted {
+  background: #e8f5e9;
+  color: #4CAF50;
+}
+.status-badge.requested {
+  background: #fff3e0;
+  color: #ff9800;
+}
+.status-badge.rejected {
+  background: #ffebee;
+  color: #f44336;
+}
+
 .product-details {
   padding: 1rem;
 }

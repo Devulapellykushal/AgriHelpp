@@ -1,43 +1,43 @@
 import {
-    AccountBalance,
-    Add,
-    Download,
-    Payment as PaymentIcon,
-    Receipt,
-    Search,
-    TrendingUp,
-    Warning,
+  AccountBalance,
+  Add,
+  Download,
+  Payment as PaymentIcon,
+  Receipt,
+  Search,
+  TrendingUp,
+  Warning,
 } from '@mui/icons-material';
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    Grid,
-    IconButton,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Tab,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Tabs,
-    TextField,
-    Typography,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  Typography,
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import './Payments.css';
@@ -50,6 +50,37 @@ const Payments = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [payables, setPayables] = useState([]); // Dealer to Wholesaler
+  const [receivables, setReceivables] = useState([]); // Retailer to Dealer
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!user?.roleId) return;
+    setLoading(true);
+    setError(null);
+    const fetchData = async () => {
+      try {
+        // Fetch dealer requests (to wholesaler)
+        const dealerRes = await fetch(`http://localhost:5005/api/inventory/dealer-requests/dealer/${user.roleId}`);
+        const dealerData = await dealerRes.json();
+        // Only accepted by wholesaler
+        const payablesData = (dealerData || []).filter(r => r.status === 'accepted');
+        setPayables(payablesData);
+        // Fetch retailer requests (from retailers)
+        const retailerRes = await fetch(`http://localhost:5005/api/inventory/retailer-requests/dealer/${user.roleId}`);
+        const retailerData = await retailerRes.json();
+        // Only accepted by dealer
+        const receivablesData = (retailerData || []).filter(r => r.status === 'accepted');
+        setReceivables(receivablesData);
+      } catch (err) {
+        setError('Failed to fetch payment data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
 
   // Mock data - replace with actual API calls
   const payments = [
@@ -95,34 +126,34 @@ const Payments = () => {
     },
   ];
 
+  // Calculate real-time stats
+  const totalRevenue = receivables.filter(r => r.paymentStatus === 'done').reduce((sum, r) => sum + (parseFloat(r.price) * r.requestedQty), 0);
+  const pendingPayments = receivables.filter(r => r.paymentStatus !== 'done').reduce((sum, r) => sum + (parseFloat(r.price) * r.requestedQty), 0);
+  const totalPayables = payables.filter(p => p.paymentStatus !== 'done').reduce((sum, p) => sum + (parseFloat(p.price) * p.requestedQty), 0);
+  const totalReceived = receivables.filter(r => r.paymentStatus === 'done').reduce((sum, r) => sum + (parseFloat(r.price) * r.requestedQty), 0);
+  const totalPaid = payables.filter(p => p.paymentStatus === 'done').reduce((sum, p) => sum + (parseFloat(p.price) * p.requestedQty), 0);
+  const bankBalance = totalReceived - totalPaid;
+
   const stats = [
     {
-      label: t('dealer.totalRevenue'),
-      value: '₹2,50,000',
-      icon: <TrendingUp />,
-      color: '#4CAF50',
-      change: '+15%',
+      label: t('dealer.totalRevenue', 'Total Revenue'),
+      value: `₹${totalRevenue.toLocaleString()}`,
+      icon: <TrendingUp />, color: '#4CAF50', change: '',
     },
     {
-      label: t('dealer.pendingPayments'),
-      value: '₹45,000',
-      icon: <Warning />,
-      color: '#FFA726',
-      change: '3 payments',
+      label: t('dealer.pendingPayments', 'Pending Payments'),
+      value: `₹${pendingPayments.toLocaleString()}`,
+      icon: <Warning />, color: '#FFA726', change: '',
     },
     {
-      label: t('dealer.totalPayables'),
-      value: '₹75,000',
-      icon: <PaymentIcon />,
-      color: '#F44336',
-      change: '5 bills',
+      label: t('dealer.totalPayables', 'Total Payables'),
+      value: `₹${totalPayables.toLocaleString()}`,
+      icon: <PaymentIcon />, color: '#F44336', change: '',
     },
     {
-      label: t('dealer.bankBalance'),
-      value: '₹3,25,000',
-      icon: <AccountBalance />,
-      color: '#2196F3',
-      change: 'Updated today',
+      label: t('dealer.bankBalance', 'Bank Balance'),
+      value: `₹${bankBalance.toLocaleString()}`,
+      icon: <AccountBalance />, color: '#2196F3', change: 'Updated now',
     },
   ];
 
@@ -139,15 +170,14 @@ const Payments = () => {
     return type === 'received' ? '#4CAF50' : '#F44336';
   };
 
+  // Filtered payments logic updated to use real transactions
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = 
-      payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (payment.customer && payment.customer.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (payment.supplier && payment.supplier.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
-    const matchesType = activeTab === 0 ? payment.type === 'received' : payment.type === 'sent';
-    
+    const matchesSearch =
+      (payment.itemName && payment.itemName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (payment.dealerEmail && payment.dealerEmail.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || payment.paymentStatus === statusFilter;
+    // For dealer, received = paymentStatus 'done', sent = 'due' (or customize as needed)
+    const matchesType = activeTab === 0 ? payment.paymentStatus === 'done' : payment.paymentStatus === 'due';
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -365,6 +395,93 @@ const Payments = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Payables Section */}
+      <h2>Payables (to Wholesaler)</h2>
+      <TableContainer component={Paper} sx={{ mb: 4 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Order ID</TableCell>
+              <TableCell>Wholesaler</TableCell>
+              <TableCell>Item</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Unit</TableCell>
+              <TableCell>Price</TableCell>
+              <TableCell>Total</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Payment Status</TableCell>
+              <TableCell>Date</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {payables.map((row) => {
+              const priceNum = row.price ? Number(String(row.price).replace(/[^\d.]/g, '')) : 0;
+              const total = priceNum * Number(row.requestedQty);
+              return (
+                <TableRow key={row._id}>
+                  <TableCell>{row._id}</TableCell>
+                  <TableCell>{row.wholesalerEmail}</TableCell>
+                  <TableCell>{row.itemName}</TableCell>
+                  <TableCell>{row.category}</TableCell>
+                  <TableCell>{row.requestedQty}</TableCell>
+                  <TableCell>{row.unit}</TableCell>
+                  <TableCell>{row.price}</TableCell>
+                  <TableCell>₹{total.toLocaleString()}</TableCell>
+                  <TableCell>{row.status}</TableCell>
+                  <TableCell>{row.paymentStatus || '-'}</TableCell>
+                  <TableCell>{new Date(row.updatedAt || row.createdAt).toLocaleString()}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {/* Receivables Section */}
+      <h2>Receivables (from Retailers)</h2>
+      <TableContainer component={Paper} sx={{ mb: 4 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Order ID</TableCell>
+              <TableCell>Retailer</TableCell>
+              <TableCell>Item</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Unit</TableCell>
+              <TableCell>Price</TableCell>
+              <TableCell>Total</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Payment Status</TableCell>
+              <TableCell>Date</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {receivables.map((row) => {
+              const priceNum = row.price ? Number(String(row.price).replace(/[^\d.]/g, '')) : 0;
+              const total = priceNum * Number(row.requestedQty);
+              return (
+                <TableRow key={row._id}>
+                  <TableCell>{row._id}</TableCell>
+                  <TableCell>{row.retailerEmail}</TableCell>
+                  <TableCell>{row.itemName}</TableCell>
+                  <TableCell>{row.category}</TableCell>
+                  <TableCell>{row.requestedQty}</TableCell>
+                  <TableCell>{row.unit}</TableCell>
+                  <TableCell>{row.price}</TableCell>
+                  <TableCell>₹{total.toLocaleString()}</TableCell>
+                  <TableCell>{row.status}</TableCell>
+                  <TableCell>{row.paymentStatus || '-'}</TableCell>
+                  <TableCell>{new Date(row.updatedAt || row.createdAt).toLocaleString()}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {loading && <div>Loading...</div>}
+      {error && <div style={{ color: 'red' }}>{error}</div>}
     </div>
   );
 };

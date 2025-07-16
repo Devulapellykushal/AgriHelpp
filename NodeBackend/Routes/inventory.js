@@ -201,4 +201,43 @@ router.post('/retailer-requests', async (req, res) => {
   }
 });
 
+// GET: Retailer fetches all their requests
+router.get('/retailer-requests/retailer/:retailerId', async (req, res) => {
+  try {
+    const requests = await RetailerRequest.find({ retailerId: req.params.retailerId }).sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET: Dealer fetches all retailer requests addressed to them
+router.get('/retailer-requests/dealer/:dealerId', async (req, res) => {
+  try {
+    const requests = await RetailerRequest.find({ dealerId: req.params.dealerId }).sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH: Update status of a retailer request (accept/reject/cancel)
+router.patch('/retailer-requests/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['accepted', 'rejected', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    const updated = await RetailerRequest.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ error: 'Request not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

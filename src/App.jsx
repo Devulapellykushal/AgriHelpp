@@ -27,11 +27,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminMessages from './pages/AdminMessages';
 import CropHealth from './pages/CropHealth';
 import Dashboard from './pages/Dashboard';
+import DealerDashboard from './pages/dealer/Dashboard';
 import Inventory from './pages/dealer/Inventory';
 import Orders from './pages/dealer/Orders';
 import Payments from './pages/dealer/Payments';
 import Support from './pages/dealer/Support';
-import DealerDashboard from './pages/DealerDashboard';
 import Community from './pages/expert/Community';
 import Consultations from './pages/expert/Consultations';
 import ExpertDashboard from './pages/expert/Dashboard';
@@ -54,6 +54,7 @@ import UserReports from './pages/Reports';
 import ResourceProviderDashboard from './pages/ResourceProviderDashboard';
 import RetailerCustomers from './pages/retailer/Customers';
 import RetailerDashboard from './pages/retailer/Dashboard';
+import RetailerOrders from './pages/retailer/Orders';
 import RetailerProducts from './pages/retailer/Products';
 import RetailerSupport from './pages/retailer/Support';
 import Analytics from './pages/wholesaler/Analytics';
@@ -357,7 +358,7 @@ const AppContent = () => {
           <Route path="/retailer/dashboard" element={<ProtectedRoute allowedRoles={['Retailer']}><RetailerDashboard /></ProtectedRoute>} />
           <Route path="/retailer/orders" element={
             <ProtectedRoute allowedRoles={['Retailer']}>
-              <Orders />
+              <RetailerOrders />
             </ProtectedRoute>
           } />
           <Route path="/retailer/products" element={
